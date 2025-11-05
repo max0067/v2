@@ -7,6 +7,7 @@ config/config.php
 
 # Backups
 *.sql
+!database/schema.sql
 *.tar.gz
 *.zip
 backup_*
