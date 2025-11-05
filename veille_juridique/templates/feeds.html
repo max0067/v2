@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des flux RSS - Veille Juridique{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="bi bi-rss"></i>
+                Gestion des flux RSS
+            </h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFeedModal">
+                <i class="bi bi-plus-circle"></i>
+                Ajouter un flux
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des flux -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="feedsTable">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>URL</th>
+                                <th>Catégorie</th>
+                                <th>Articles</th>
+                                <th>Statut</th>
+                                <th>Date de création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feed in feeds %}
+                            <tr id="feed-{{ feed.id }}">
+                                <td class="fw-bold">{{ feed.name }}</td>
+                                <td>
+                                    <a href="{{ feed.url }}" target="_blank" class="text-muted small">
+                                        {{ feed.url | truncate(50) }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if feed.category %}
+                                    <span class="badge bg-secondary">{{ feed.category }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ feed.articles.count() }}</span>
+                                </td>
+                                <td>
+                                    {% if feed.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Actif
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-pause-circle"></i> Inactif
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">
+                                    {{ feed.created_at.strftime('%d/%m/%Y') }}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editFeed({{ feed.id }})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteFeed({{ feed.id }}, '{{ feed.name }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if not feeds %}
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle"></i>
+                        Aucun flux RSS configuré. Cliquez sur "Ajouter un flux" pour commencer.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'ajout de flux -->
+<div class="modal fade" id="addFeedModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i>
+                    Ajouter un flux RSS
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addFeedForm">
+                    <div class="mb-3">
+                        <label for="feedName" class="form-label">Nom du flux *</label>
+                        <input type="text" class="form-control" id="feedName" required placeholder="Ex: Legifrance Actualités">
+                    </div>
+                    <div class="mb-3">
+                        <label for="feedUrl" class="form-label">URL du flux RSS *</label>
+                        <input type="url" class="form-control" id="feedUrl" required placeholder="https://exemple.com/rss.xml">
+                        <div class="form-text">L'URL doit pointer vers un flux RSS ou Atom valide</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="feedCategory" class="form-label">Catégorie</label>
+                        <input type="text" class="form-control" id="feedCategory" placeholder="Ex: Législation, Jurisprudence, Doctrine">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="feedActive" checked>
+                        <label class="form-check-label" for="feedActive">
+                            Flux actif (recevoir les mises à jour)
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="addFeed()">
+                    <i class="bi bi-save"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de modification de flux -->
+<div class="modal fade" id="editFeedModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i>
+                    Modifier le flux RSS
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editFeedForm">
+                    <input type="hidden" id="editFeedId">
+                    <div class="mb-3">
+                        <label for="editFeedName" class="form-label">Nom du flux *</label>
+                        <input type="text" class="form-control" id="editFeedName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeedUrl" class="form-label">URL du flux RSS *</label>
+                        <input type="url" class="form-control" id="editFeedUrl" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFeedCategory" class="form-label">Catégorie</label>
+                        <input type="text" class="form-control" id="editFeedCategory">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="editFeedActive">
+                        <label class="form-check-label" for="editFeedActive">
+                            Flux actif
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="updateFeed()">
+                    <i class="bi bi-save"></i>
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addFeed() {
+    const name = document.getElementById('feedName').value.trim();
+    const url = document.getElementById('feedUrl').value.trim();
+    const category = document.getElementById('feedCategory').value.trim();
+    const isActive = document.getElementById('feedActive').checked;
+
+    if (!name || !url) {
+        showToast('Veuillez remplir tous les champs obligatoires', 'error');
+        return;
+    }
+
+    const data = {
+        name: name,
+        url: url,
+        category: category || null,
+        is_active: isActive
+    };
+
+    fetch('/api/feeds', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(feed => {
+        showToast('Flux ajouté avec succès !', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('addFeedModal')).hide();
+        document.getElementById('addFeedForm').reset();
+        // Recharger la page pour afficher le nouveau flux
+        setTimeout(() => location.reload(), 1000);
+    })
+    .catch(error => {
+        showToast(error.error || 'Erreur lors de l\'ajout du flux', 'error');
+    });
+}
+
+function editFeed(feedId) {
+    fetch(`/api/feeds`)
+        .then(response => response.json())
+        .then(feeds => {
+            const feed = feeds.find(f => f.id === feedId);
+            if (feed) {
+                document.getElementById('editFeedId').value = feed.id;
+                document.getElementById('editFeedName').value = feed.name;
+                document.getElementById('editFeedUrl').value = feed.url;
+                document.getElementById('editFeedCategory').value = feed.category || '';
+                document.getElementById('editFeedActive').checked = feed.is_active;
+
+                const modal = new bootstrap.Modal(document.getElementById('editFeedModal'));
+                modal.show();
+            }
+        })
+        .catch(error => {
+            showToast('Erreur lors du chargement des informations', 'error');
+        });
+}
+
+function updateFeed() {
+    const feedId = document.getElementById('editFeedId').value;
+    const name = document.getElementById('editFeedName').value.trim();
+    const url = document.getElementById('editFeedUrl').value.trim();
+    const category = document.getElementById('editFeedCategory').value.trim();
+    const isActive = document.getElementById('editFeedActive').checked;
+
+    const data = {
+        name: name,
+        url: url,
+        category: category || null,
+        is_active: isActive
+    };
+
+    fetch(`/api/feeds/${feedId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(feed => {
+        showToast('Flux modifié avec succès !', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('editFeedModal')).hide();
+        // Recharger la page pour afficher les modifications
+        setTimeout(() => location.reload(), 1000);
+    })
+    .catch(error => {
+        showToast('Erreur lors de la modification du flux', 'error');
+    });
+}
+
+function deleteFeed(feedId, feedName) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le flux "${feedName}" ?\n\nTous les articles associés seront également supprimés.`)) {
+        return;
+    }
+
+    fetch(`/api/feeds/${feedId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        showToast('Flux supprimé avec succès !', 'success');
+        // Retirer la ligne du tableau
+        document.getElementById(`feed-${feedId}`).remove();
+
+        // Vérifier s'il reste des flux
+        const tbody = document.querySelector('#feedsTable tbody');
+        if (tbody.children.length === 0) {
+            setTimeout(() => location.reload(), 1000);
+        }
+    })
+    .catch(error => {
+        showToast('Erreur lors de la suppression du flux', 'error');
+    });
+}
+</script>
+{% endblock %}

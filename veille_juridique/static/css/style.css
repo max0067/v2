@@ -1,0 +1,377 @@
+/**
+ * Styles personnalisés pour l'application de veille juridique
+ * Design moderne type Gmail avec thème clair
+ */
+
+:root {
+    --primary-color: #1a73e8;
+    --secondary-color: #5f6368;
+    --success-color: #34a853;
+    --danger-color: #ea4335;
+    --warning-color: #fbbc04;
+    --sidebar-width: 260px;
+    --sidebar-bg: #f8f9fa;
+    --border-color: #dadce0;
+    --text-primary: #202124;
+    --text-secondary: #5f6368;
+}
+
+/* ========== Layout général ========== */
+
+body {
+    font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif;
+    background-color: #ffffff;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+#wrapper {
+    height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ========== Sidebar ========== */
+
+#sidebar-wrapper {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    height: 100vh;
+    transition: margin 0.25s ease-out;
+}
+
+.sidebar-heading {
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    background-color: var(--primary-color) !important;
+}
+
+.list-group-item {
+    border: none;
+    border-left: 3px solid transparent;
+    padding: 0.875rem 1.5rem;
+    color: var(--text-secondary);
+    background-color: transparent;
+    transition: all 0.2s ease;
+    font-weight: 400;
+}
+
+.list-group-item:hover {
+    background-color: #e8eaed;
+    color: var(--text-primary);
+    border-left-color: var(--primary-color);
+}
+
+.list-group-item.active {
+    background-color: #e8f0fe;
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
+    font-weight: 500;
+}
+
+.list-group-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Statistiques sidebar */
+.sidebar-stats {
+    border-top: 1px solid var(--border-color);
+    background-color: #ffffff;
+}
+
+.stats-item {
+    padding: 0.5rem 0;
+}
+
+/* ========== Contenu principal ========== */
+
+#page-content-wrapper {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.navbar {
+    box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+#sidebarToggle {
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+}
+
+/* ========== Cards & Articles ========== */
+
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+.article-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.article-card:hover {
+    border-left-color: var(--success-color);
+}
+
+.article-link {
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.article-link:hover {
+    color: var(--primary-color);
+}
+
+.article-description {
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+/* ========== Badges ========== */
+
+.badge {
+    font-weight: 500;
+    padding: 0.375em 0.75em;
+    border-radius: 4px;
+}
+
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+/* ========== Boutons ========== */
+
+.btn {
+    border-radius: 4px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #1765cc;
+    border-color: #1765cc;
+    box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--border-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: #e8f0fe;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-danger {
+    color: var(--danger-color);
+    border-color: var(--border-color);
+}
+
+.btn-outline-danger:hover {
+    background-color: #fce8e6;
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* ========== Formulaires ========== */
+
+.form-control, .form-select {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.625rem 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+/* ========== Tables ========== */
+
+.table {
+    color: var(--text-primary);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* ========== Modals ========== */
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ========== Pagination ========== */
+
+.pagination .page-link {
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    margin: 0 2px;
+    border-radius: 4px;
+}
+
+.pagination .page-link:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ========== Alerts ========== */
+
+.alert {
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+.alert-info {
+    background-color: #e8f0fe;
+    color: #1967d2;
+    border-color: #d2e3fc;
+}
+
+.alert-warning {
+    background-color: #fef7e0;
+    color: #f29900;
+    border-color: #feefc3;
+}
+
+.alert-success {
+    background-color: #e6f4ea;
+    color: #188038;
+    border-color: #ceead6;
+}
+
+.alert-danger {
+    background-color: #fce8e6;
+    color: #c5221f;
+    border-color: #f6aea9;
+}
+
+/* ========== Toasts ========== */
+
+.toast {
+    box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+    border-radius: 4px;
+}
+
+.toast-header {
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom: none;
+}
+
+/* ========== Loading spinner ========== */
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* ========== Responsive ========== */
+
+@media (max-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: calc(-1 * var(--sidebar-width));
+    }
+
+    #sidebar-wrapper.show {
+        margin-left: 0;
+    }
+
+    .sidebar-stats {
+        display: none;
+    }
+}
+
+/* ========== Utilities ========== */
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.border-bottom {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.border-end {
+    border-right: 1px solid var(--border-color) !important;
+}
+
+/* ========== Scrollbar personnalisée (webkit) ========== */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
