@@ -1,0 +1,64 @@
+# =====================================================
+# Configuration Apache pour Veille Juridique RSS
+# =====================================================
+
+# Activer le moteur de réécriture
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Rediriger vers HTTPS (à décommenter en production)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Empêcher l'accès direct aux fichiers de configuration
+    RewriteRule ^(config|src|database|cron)/ - [F,L]
+</IfModule>
+
+# Protection des fichiers sensibles
+<FilesMatch "\.(env|sql|md|log|ini|json)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Désactiver l'affichage de la liste des répertoires
+Options -Indexes
+
+# Désactiver la signature du serveur
+ServerSignature Off
+
+# Protection contre le clickjacking
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Compression Gzip
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Cache des fichiers statiques
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+</IfModule>
+
+# Limite de taille de requête (protection DoS)
+LimitRequestBody 10485760
+
+# Protection contre les injections PHP
+<FilesMatch "\.ph(p[3-5]?|tml)$">
+    Order deny,allow
+    Allow from all
+</FilesMatch>
+
+# Page d'erreur personnalisée (optionnel)
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php

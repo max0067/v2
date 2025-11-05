@@ -1,0 +1,33 @@
+# Configuration sensible
+config/config.php
+
+# Logs
+*.log
+/var/log/
+
+# Backups
+*.sql
+*.tar.gz
+*.zip
+backup_*
+
+# Environnement
+.env
+.env.local
+
+# Système
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dépendances (si composer est utilisé plus tard)
+/vendor/
+
+# Cache
+cache/
+tmp/
+temp/

@@ -1,0 +1,10 @@
+# Protection des dossiers sensibles à la racine
+# Ce fichier empêche l'accès direct aux fichiers de configuration
+
+Order deny,allow
+Deny from all
+
+# Autoriser uniquement le dossier public
+<FilesMatch "^(public/)">
+    Allow from all
+</FilesMatch>
