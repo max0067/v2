@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header avec stats et bouton refresh -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="bi bi-newspaper text-primary"></i>
+                Veille Juridique
+            </h1>
+            <div class="d-flex gap-3">
+                <div class="badge bg-primary fs-6">
+                    <i class="bi bi-rss"></i> {{ total_feeds }} flux actifs
+                </div>
+                <div class="badge bg-secondary fs-6">
+                    <i class="bi bi-file-text"></i> {{ total_articles }} articles
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group mb-2" role="group">
+                <button id="exportCsvBtn" class="btn btn-outline-primary" title="Exporter en CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                </button>
+                <button id="exportPdfBtn" class="btn btn-outline-danger" title="Exporter en PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                </button>
+            </div>
+            <br>
+            <button id="refreshBtn" class="btn btn-success btn-lg">
+                <i class="bi bi-arrow-clockwise"></i> Actualiser les flux
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="viewAll" autocomplete="off" checked>
+                <label class="btn btn-outline-primary" for="viewAll">
+                    <i class="bi bi-list"></i> Tous
+                </label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="viewFavorites" autocomplete="off">
+                <label class="btn btn-outline-warning" for="viewFavorites">
+                    <i class="bi bi-star-fill"></i> Favoris
+                </label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="viewUnread" autocomplete="off">
+                <label class="btn btn-outline-info" for="viewUnread">
+                    <i class="bi bi-envelope"></i> Non lus
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       id="searchInput"
+                       class="form-control"
+                       placeholder="Rechercher dans les articles (titre, source, contenu)...">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+            <small class="text-muted">Tapez au moins 2 caractères pour lancer la recherche</small>
+        </div>
+    </div>
+
+    <!-- Loading spinner -->
+    <div id="loadingSpinner" class="text-center my-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-2">Chargement en cours...</p>
+    </div>
+
+    <!-- Liste des articles -->
+    <div id="articlesContainer">
+        {% if articles %}
+            <div class="row">
+                {% for article in articles %}
+                <div class="col-12 mb-3 article-card" data-article-id="{{ article.id }}" data-is-favorite="{{ article.is_favorite|lower }}" data-is-read="{{ article.is_read|lower }}">
+                    <div class="card h-100 shadow-sm hover-shadow {% if not article.is_read %}border-primary{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0 flex-grow-1">
+                                    <a href="{{ article.link }}"
+                                       target="_blank"
+                                       class="text-decoration-none text-dark"
+                                       onclick="markAsRead({{ article.id }})">
+                                        {{ article.title }}
+                                    </a>
+                                </h5>
+                                <div class="ms-3 d-flex gap-2" style="position: relative; z-index: 10;">
+                                    <button class="btn btn-sm btn-outline-warning favorite-btn"
+                                            onclick="toggleFavorite(event, {{ article.id }})"
+                                            title="{% if article.is_favorite %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}">
+                                        <i class="bi bi-star{% if article.is_favorite %}-fill{% endif %}"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary read-btn"
+                                            onclick="toggleRead(event, {{ article.id }})"
+                                            title="{% if article.is_read %}Marquer comme non lu{% else %}Marquer comme lu{% endif %}">
+                                        <i class="bi bi-envelope{% if article.is_read %}-open{% endif %}"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark me-2">
+                                    <i class="bi bi-rss"></i> {{ article.feed.name }}
+                                </span>
+                                {% if article.feed.category %}
+                                <span class="badge bg-secondary me-2">
+                                    <i class="bi bi-tag"></i> {{ article.feed.category }}
+                                </span>
+                                {% endif %}
+                                {% for tag in article.tags %}
+                                <span class="badge me-1" style="background-color: {{ tag.color }};">
+                                    {{ tag.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+
+                            {% if article.description %}
+                            <p class="card-text text-muted">
+                                {{ article.description[:300] }}{% if article.description|length > 300 %}...{% endif %}
+                            </p>
+                            {% endif %}
+
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar3"></i>
+                                {% if article.published_date %}
+                                    {{ article.published_date.strftime('%d/%m/%Y à %H:%M') }}
+                                {% else %}
+                                    {{ article.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                {% endif %}
+
+                                {% if article.author %}
+                                    <i class="bi bi-person ms-3"></i> {{ article.author }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-3"></i>
+                <p class="mt-3 mb-0">
+                    Aucun article disponible. Ajoutez des flux RSS et actualisez pour commencer !
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Message de recherche vide -->
+    <div id="noResultsMessage" class="alert alert-warning text-center" style="display: none;">
+        <i class="bi bi-search fs-3"></i>
+        <p class="mt-3 mb-0">Aucun résultat trouvé pour votre recherche.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion de la recherche
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const articlesContainer = document.getElementById('articlesContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            if (query.length === 0) {
+                window.location.reload();
+            }
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 500);
+    });
+
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        window.location.reload();
+    });
+
+    function performSearch(query) {
+        loadingSpinner.style.display = 'block';
+        articlesContainer.style.display = 'none';
+        noResultsMessage.style.display = 'none';
+
+        fetch(`/api/articles/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+
+                if (data.success && data.articles.length > 0) {
+                    displayArticles(data.articles);
+                } else {
+                    articlesContainer.style.display = 'none';
+                    noResultsMessage.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                loadingSpinner.style.display = 'none';
+                alert('Erreur lors de la recherche');
+            });
+    }
+
+    function displayArticles(articles) {
+        let html = '<div class="row">';
+
+        articles.forEach(article => {
+            const publishedDate = article.published_date
+                ? new Date(article.published_date).toLocaleString('fr-FR')
+                : new Date(article.created_at).toLocaleString('fr-FR');
+
+            const description = article.description
+                ? (article.description.length > 300
+                    ? article.description.substring(0, 300) + '...'
+                    : article.description)
+                : '';
+
+            html += `
+                <div class="col-12 mb-3 article-card">
+                    <div class="card h-100 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="${article.link}" target="_blank" class="text-decoration-none text-dark">
+                                    ${article.title}
+                                </a>
+                            </h5>
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark me-2">
+                                    <i class="bi bi-rss"></i> ${article.feed_name}
+                                </span>
+                                ${article.feed_category ? `
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-tag"></i> ${article.feed_category}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            ${description ? `<p class="card-text text-muted">${description}</p>` : ''}
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar3"></i> ${publishedDate}
+                                ${article.author ? `<i class="bi bi-person ms-3"></i> ${article.author}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        articlesContainer.innerHTML = html;
+        articlesContainer.style.display = 'block';
+    }
+
+    // Gestion de l'actualisation des flux
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualisation...';
+
+        fetch('/api/feeds/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'actualisation des flux');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+
+    // Gestion des favoris
+    function toggleFavorite(event, articleId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/api/articles/${articleId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                const btn = card.querySelector('.favorite-btn i');
+
+                if (data.is_favorite) {
+                    btn.classList.add('bi-star-fill');
+                    btn.classList.remove('bi-star');
+                    card.dataset.isFavorite = 'true';
+                } else {
+                    btn.classList.remove('bi-star-fill');
+                    btn.classList.add('bi-star');
+                    card.dataset.isFavorite = 'false';
+                }
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+
+    // Gestion de la lecture
+    function toggleRead(event, articleId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                const btn = card.querySelector('.read-btn i');
+                const cardEl = card.querySelector('.card');
+
+                if (data.is_read) {
+                    btn.classList.add('bi-envelope-open');
+                    btn.classList.remove('bi-envelope');
+                    cardEl.classList.remove('border-primary');
+                    card.dataset.isRead = 'true';
+                } else {
+                    btn.classList.remove('bi-envelope-open');
+                    btn.classList.add('bi-envelope');
+                    cardEl.classList.add('border-primary');
+                    card.dataset.isRead = 'false';
+                }
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+
+    // Marquer comme lu au clic sur le lien
+    function markAsRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_read: true })
+        }).catch(error => console.error('Erreur:', error));
+    }
+
+    // Filtres de vue
+    document.getElementById('viewAll').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = 'block';
+            });
+        }
+    });
+
+    document.getElementById('viewFavorites').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = card.dataset.isFavorite === 'true' ? 'block' : 'none';
+            });
+        }
+    });
+
+    document.getElementById('viewUnread').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = card.dataset.isRead === 'false' ? 'block' : 'none';
+            });
+        }
+    });
+
+    // Export CSV
+    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        window.location.href = '/api/exports/csv';
+    });
+
+    // Export PDF
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        window.location.href = '/api/exports/pdf';
+
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i>';
+        }, 2000);
+    });
+</script>
+{% endblock %}

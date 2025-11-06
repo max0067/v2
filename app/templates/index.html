@@ -4,45 +4,51 @@
 
 {% block content %}
 <div class="container">
-    <!-- Header avec stats et bouton refresh -->
+    <!-- Header avec stats et actions -->
     <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-3">
-                <i class="bi bi-newspaper text-primary"></i>
+        <div class="col-lg-8">
+            <h1 class="mb-3 d-flex align-items-center">
+                <i class="bi bi-newspaper text-primary me-2"></i>
                 Veille Juridique
             </h1>
-            <div class="d-flex gap-3">
+            <div class="d-flex flex-wrap gap-2">
                 <div class="badge bg-primary fs-6">
                     <i class="bi bi-rss"></i> {{ total_feeds }} flux actifs
                 </div>
                 <div class="badge bg-secondary fs-6">
                     <i class="bi bi-file-text"></i> {{ total_articles }} articles
                 </div>
+                <div class="badge bg-success fs-6" id="favCountBadge" style="display: none;">
+                    <i class="bi bi-star-fill"></i> <span id="favCount">0</span> favoris
+                </div>
+                <div class="badge bg-info fs-6" id="unreadCountBadge" style="display: none;">
+                    <i class="bi bi-envelope"></i> <span id="unreadCount">0</span> non lus
+                </div>
             </div>
         </div>
-        <div class="col-md-4 text-end">
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
             <div class="btn-group mb-2" role="group">
-                <button id="exportCsvBtn" class="btn btn-outline-primary" title="Exporter en CSV">
-                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                <button id="exportCsvBtn" class="btn btn-sm btn-outline-primary" title="Exporter en CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
                 </button>
-                <button id="exportPdfBtn" class="btn btn-outline-danger" title="Exporter en PDF">
-                    <i class="bi bi-file-earmark-pdf"></i>
+                <button id="exportPdfBtn" class="btn btn-sm btn-outline-danger" title="Exporter en PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
                 </button>
             </div>
             <br>
-            <button id="refreshBtn" class="btn btn-success btn-lg">
-                <i class="bi bi-arrow-clockwise"></i> Actualiser les flux
+            <button id="refreshBtn" class="btn btn-success">
+                <i class="bi bi-arrow-clockwise"></i> Actualiser
             </button>
         </div>
     </div>
 
-    <!-- Filtres -->
+    <!-- Filtres de vue -->
     <div class="row mb-3">
         <div class="col-12">
-            <div class="btn-group" role="group">
+            <div class="btn-group w-100" role="group">
                 <input type="radio" class="btn-check" name="viewMode" id="viewAll" autocomplete="off" checked>
                 <label class="btn btn-outline-primary" for="viewAll">
-                    <i class="bi bi-list"></i> Tous
+                    <i class="bi bi-list"></i> Tous les articles
                 </label>
 
                 <input type="radio" class="btn-check" name="viewMode" id="viewFavorites" autocomplete="off">
@@ -61,8 +67,8 @@
     <!-- Barre de recherche -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="input-group input-group-lg">
-                <span class="input-group-text">
+            <div class="input-group input-group-lg shadow-sm">
+                <span class="input-group-text bg-white">
                     <i class="bi bi-search"></i>
                 </span>
                 <input type="text"
@@ -79,37 +85,40 @@
 
     <!-- Loading spinner -->
     <div id="loadingSpinner" class="text-center my-5" style="display: none;">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Chargement...</span>
         </div>
-        <p class="mt-2">Chargement en cours...</p>
+        <p class="mt-3">Chargement en cours...</p>
     </div>
 
     <!-- Liste des articles -->
     <div id="articlesContainer">
         {% if articles %}
-            <div class="row">
+            <div class="row g-3">
                 {% for article in articles %}
-                <div class="col-12 mb-3 article-card" data-article-id="{{ article.id }}" data-is-favorite="{{ article.is_favorite|lower }}" data-is-read="{{ article.is_read|lower }}">
-                    <div class="card h-100 shadow-sm hover-shadow {% if not article.is_read %}border-primary{% endif %}">
+                <div class="col-12 article-card"
+                     data-article-id="{{ article.id }}"
+                     data-is-favorite="{{ 'true' if article.is_favorite else 'false' }}"
+                     data-is-read="{{ 'true' if article.is_read else 'false' }}">
+                    <div class="card h-100 shadow-sm hover-card {% if not article.is_read %}border-start border-primary border-3{% endif %}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h5 class="card-title mb-0 flex-grow-1">
                                     <a href="{{ article.link }}"
                                        target="_blank"
-                                       class="text-decoration-none text-dark"
-                                       onclick="markAsRead({{ article.id }})">
+                                       class="text-decoration-none text-dark article-link"
+                                       data-article-id="{{ article.id }}">
                                         {{ article.title }}
                                     </a>
                                 </h5>
-                                <div class="ms-3 d-flex gap-2" style="position: relative; z-index: 10;">
+                                <div class="ms-3 d-flex gap-1 flex-shrink-0">
                                     <button class="btn btn-sm btn-outline-warning favorite-btn"
-                                            onclick="toggleFavorite(event, {{ article.id }})"
+                                            data-article-id="{{ article.id }}"
                                             title="{% if article.is_favorite %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}">
                                         <i class="bi bi-star{% if article.is_favorite %}-fill{% endif %}"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-secondary read-btn"
-                                            onclick="toggleRead(event, {{ article.id }})"
+                                    <button class="btn btn-sm btn-outline-info read-btn"
+                                            data-article-id="{{ article.id }}"
                                             title="{% if article.is_read %}Marquer comme non lu{% else %}Marquer comme lu{% endif %}">
                                         <i class="bi bi-envelope{% if article.is_read %}-open{% endif %}"></i>
                                     </button>
@@ -122,30 +131,29 @@
                                 </span>
                                 {% if article.feed.category %}
                                 <span class="badge bg-secondary me-2">
-                                    <i class="bi bi-tag"></i> {{ article.feed.category }}
+                                    {{ article.feed.category }}
                                 </span>
                                 {% endif %}
                                 {% for tag in article.tags %}
-                                <span class="badge me-1" style="background-color: {{ tag.color }};">
+                                <span class="badge me-1" style="background-color: {{ tag.color }}; color: white;">
                                     {{ tag.name }}
                                 </span>
                                 {% endfor %}
                             </div>
 
                             {% if article.description %}
-                            <p class="card-text text-muted">
-                                {{ article.description[:300] }}{% if article.description|length > 300 %}...{% endif %}
+                            <p class="card-text text-muted small">
+                                {{ article.description[:280] }}{% if article.description|length > 280 %}...{% endif %}
                             </p>
                             {% endif %}
 
                             <div class="text-muted small">
                                 <i class="bi bi-calendar3"></i>
                                 {% if article.published_date %}
-                                    {{ article.published_date.strftime('%d/%m/%Y à %H:%M') }}
+                                    {{ article.published_date.strftime('%d/%m/%Y %H:%M') }}
                                 {% else %}
-                                    {{ article.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                    {{ article.created_at.strftime('%d/%m/%Y %H:%M') }}
                                 {% endif %}
-
                                 {% if article.author %}
                                     <i class="bi bi-person ms-3"></i> {{ article.author }}
                                 {% endif %}
@@ -175,61 +183,269 @@
 
 {% block extra_js %}
 <script>
-    // Gestion de la recherche
+(function() {
+    'use strict';
+
+    // Variables globales
     let searchTimeout;
+    let allArticles = [];
+
+    // Éléments DOM
     const searchInput = document.getElementById('searchInput');
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const articlesContainer = document.getElementById('articlesContainer');
     const loadingSpinner = document.getElementById('loadingSpinner');
     const noResultsMessage = document.getElementById('noResultsMessage');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-    searchInput.addEventListener('input', function() {
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCounts();
+        attachEventListeners();
+    });
+
+    // Attacher les gestionnaires d'événements
+    function attachEventListeners() {
+        // Recherche
+        if (searchInput) {
+            searchInput.addEventListener('input', handleSearch);
+        }
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', clearSearch);
+        }
+
+        // Actualisation
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshFeeds);
+        }
+
+        // Export
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', () => exportData('csv'));
+        }
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => exportData('pdf'));
+        }
+
+        // Filtres de vue
+        document.getElementById('viewAll')?.addEventListener('change', () => filterView('all'));
+        document.getElementById('viewFavorites')?.addEventListener('change', () => filterView('favorites'));
+        document.getElementById('viewUnread')?.addEventListener('change', () => filterView('unread'));
+
+        // Boutons favoris et lecture (délégation d'événements)
+        document.addEventListener('click', function(e) {
+            const favoriteBtn = e.target.closest('.favorite-btn');
+            const readBtn = e.target.closest('.read-btn');
+            const articleLink = e.target.closest('.article-link');
+
+            if (favoriteBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite(favoriteBtn.dataset.articleId);
+            } else if (readBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleRead(readBtn.dataset.articleId);
+            } else if (articleLink) {
+                markAsRead(articleLink.dataset.articleId);
+            }
+        });
+    }
+
+    // Gestion de la recherche
+    function handleSearch() {
         clearTimeout(searchTimeout);
-        const query = this.value.trim();
+        const query = searchInput.value.trim();
 
         if (query.length < 2) {
             if (query.length === 0) {
-                window.location.reload();
+                location.reload();
             }
             return;
         }
 
-        searchTimeout = setTimeout(() => {
-            performSearch(query);
-        }, 500);
-    });
-
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        window.location.reload();
-    });
+        searchTimeout = setTimeout(() => performSearch(query), 500);
+    }
 
     function performSearch(query) {
-        loadingSpinner.style.display = 'block';
-        articlesContainer.style.display = 'none';
-        noResultsMessage.style.display = 'none';
+        showLoading();
 
         fetch(`/api/articles/search?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(data => {
-                loadingSpinner.style.display = 'none';
-
-                if (data.success && data.articles.length > 0) {
+                hideLoading();
+                if (data.success && data.articles && data.articles.length > 0) {
                     displayArticles(data.articles);
                 } else {
-                    articlesContainer.style.display = 'none';
-                    noResultsMessage.style.display = 'block';
+                    showNoResults();
                 }
             })
             .catch(error => {
-                console.error('Erreur:', error);
-                loadingSpinner.style.display = 'none';
-                alert('Erreur lors de la recherche');
+                hideLoading();
+                console.error('Erreur recherche:', error);
+                showError('Erreur lors de la recherche');
             });
     }
 
+    function clearSearch() {
+        searchInput.value = '';
+        location.reload();
+    }
+
+    // Toggle favori
+    function toggleFavorite(articleId) {
+        fetch(`/api/articles/${articleId}/favorite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                if (card) {
+                    card.dataset.isFavorite = data.is_favorite ? 'true' : 'false';
+                    const icon = card.querySelector('.favorite-btn i');
+                    if (icon) {
+                        icon.className = data.is_favorite ? 'bi bi-star-fill' : 'bi bi-star';
+                    }
+                    updateCounts();
+                    showToast(data.is_favorite ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur favori:', error);
+            showError('Erreur lors de la mise à jour du favori');
+        });
+    }
+
+    // Toggle lu/non lu
+    function toggleRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                if (card) {
+                    card.dataset.isRead = data.is_read ? 'true' : 'false';
+                    const icon = card.querySelector('.read-btn i');
+                    const cardEl = card.querySelector('.card');
+
+                    if (icon) {
+                        icon.className = data.is_read ? 'bi bi-envelope-open' : 'bi bi-envelope';
+                    }
+                    if (cardEl) {
+                        if (data.is_read) {
+                            cardEl.classList.remove('border-start', 'border-primary', 'border-3');
+                        } else {
+                            cardEl.classList.add('border-start', 'border-primary', 'border-3');
+                        }
+                    }
+                    updateCounts();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lecture:', error);
+        });
+    }
+
+    // Marquer comme lu au clic
+    function markAsRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_read: true })
+        }).catch(error => console.error('Erreur:', error));
+    }
+
+    // Filtres de vue
+    function filterView(mode) {
+        const cards = document.querySelectorAll('.article-card');
+        cards.forEach(card => {
+            let show = false;
+            if (mode === 'all') {
+                show = true;
+            } else if (mode === 'favorites') {
+                show = card.dataset.isFavorite === 'true';
+            } else if (mode === 'unread') {
+                show = card.dataset.isRead === 'false';
+            }
+            card.style.display = show ? 'block' : 'none';
+        });
+    }
+
+    // Actualiser les flux
+    function refreshFeeds() {
+        const btn = refreshBtn;
+        const originalHTML = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualisation...';
+
+        fetch('/api/feeds/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'Flux actualisés avec succès', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Erreur inconnue');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showError('Erreur lors de l\'actualisation');
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        });
+    }
+
+    // Export de données
+    function exportData(format) {
+        if (format === 'csv') {
+            window.location.href = '/api/export/csv';
+        } else if (format === 'pdf') {
+            window.location.href = '/api/export/pdf/0'; // 0 = tous les articles
+        }
+    }
+
+    // Mettre à jour les compteurs
+    function updateCounts() {
+        const allCards = document.querySelectorAll('.article-card');
+        let favCount = 0;
+        let unreadCount = 0;
+
+        allCards.forEach(card => {
+            if (card.dataset.isFavorite === 'true') favCount++;
+            if (card.dataset.isRead === 'false') unreadCount++;
+        });
+
+        const favBadge = document.getElementById('favCountBadge');
+        const unreadBadge = document.getElementById('unreadCountBadge');
+
+        if (favCount > 0) {
+            document.getElementById('favCount').textContent = favCount;
+            favBadge.style.display = 'inline-block';
+        }
+
+        if (unreadCount > 0) {
+            document.getElementById('unreadCount').textContent = unreadCount;
+            unreadBadge.style.display = 'inline-block';
+        }
+    }
+
+    // Afficher les articles (pour la recherche)
     function displayArticles(articles) {
-        let html = '<div class="row">';
+        let html = '<div class="row g-3">';
 
         articles.forEach(article => {
             const publishedDate = article.published_date
@@ -237,31 +453,44 @@
                 : new Date(article.created_at).toLocaleString('fr-FR');
 
             const description = article.description
-                ? (article.description.length > 300
-                    ? article.description.substring(0, 300) + '...'
-                    : article.description)
+                ? (article.description.length > 280 ? article.description.substring(0, 280) + '...' : article.description)
                 : '';
 
+            const tags = article.tags || [];
+            const tagsHTML = tags.map(tag =>
+                `<span class="badge me-1" style="background-color: ${tag.color}; color: white;">${tag.name}</span>`
+            ).join('');
+
             html += `
-                <div class="col-12 mb-3 article-card">
-                    <div class="card h-100 shadow-sm hover-shadow">
+                <div class="col-12 article-card"
+                     data-article-id="${article.id}"
+                     data-is-favorite="${article.is_favorite ? 'true' : 'false'}"
+                     data-is-read="${article.is_read ? 'true' : 'false'}">
+                    <div class="card h-100 shadow-sm hover-card ${!article.is_read ? 'border-start border-primary border-3' : ''}">
                         <div class="card-body">
-                            <h5 class="card-title">
-                                <a href="${article.link}" target="_blank" class="text-decoration-none text-dark">
-                                    ${article.title}
-                                </a>
-                            </h5>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0 flex-grow-1">
+                                    <a href="${article.link}" target="_blank" class="text-decoration-none text-dark article-link" data-article-id="${article.id}">
+                                        ${article.title}
+                                    </a>
+                                </h5>
+                                <div class="ms-3 d-flex gap-1 flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-warning favorite-btn" data-article-id="${article.id}">
+                                        <i class="bi bi-star${article.is_favorite ? '-fill' : ''}"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info read-btn" data-article-id="${article.id}">
+                                        <i class="bi bi-envelope${article.is_read ? '-open' : ''}"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="mb-2">
                                 <span class="badge bg-info text-dark me-2">
-                                    <i class="bi bi-rss"></i> ${article.feed_name}
+                                    <i class="bi bi-rss"></i> ${article.feed_name || 'Source inconnue'}
                                 </span>
-                                ${article.feed_category ? `
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-tag"></i> ${article.feed_category}
-                                    </span>
-                                ` : ''}
+                                ${article.feed_category ? `<span class="badge bg-secondary me-2">${article.feed_category}</span>` : ''}
+                                ${tagsHTML}
                             </div>
-                            ${description ? `<p class="card-text text-muted">${description}</p>` : ''}
+                            ${description ? `<p class="card-text text-muted small">${description}</p>` : ''}
                             <div class="text-muted small">
                                 <i class="bi bi-calendar3"></i> ${publishedDate}
                                 ${article.author ? `<i class="bi bi-person ms-3"></i> ${article.author}` : ''}
@@ -275,159 +504,38 @@
         html += '</div>';
         articlesContainer.innerHTML = html;
         articlesContainer.style.display = 'block';
+        updateCounts();
     }
 
-    // Gestion de l'actualisation des flux
-    document.getElementById('refreshBtn').addEventListener('click', function() {
-        const btn = this;
-        const originalText = btn.innerHTML;
-
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualisation...';
-
-        fetch('/api/feeds/refresh', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                window.location.reload();
-            } else {
-                alert('Erreur: ' + data.error);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Erreur lors de l\'actualisation des flux');
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        });
-    });
-
-    // Gestion des favoris
-    function toggleFavorite(event, articleId) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        fetch(`/api/articles/${articleId}/favorite`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const card = document.querySelector(`[data-article-id="${articleId}"]`);
-                const btn = card.querySelector('.favorite-btn i');
-
-                if (data.is_favorite) {
-                    btn.classList.add('bi-star-fill');
-                    btn.classList.remove('bi-star');
-                    card.dataset.isFavorite = 'true';
-                } else {
-                    btn.classList.remove('bi-star-fill');
-                    btn.classList.add('bi-star');
-                    card.dataset.isFavorite = 'false';
-                }
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
+    // Fonctions utilitaires
+    function showLoading() {
+        loadingSpinner.style.display = 'block';
+        articlesContainer.style.display = 'none';
+        noResultsMessage.style.display = 'none';
     }
 
-    // Gestion de la lecture
-    function toggleRead(event, articleId) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        fetch(`/api/articles/${articleId}/read`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const card = document.querySelector(`[data-article-id="${articleId}"]`);
-                const btn = card.querySelector('.read-btn i');
-                const cardEl = card.querySelector('.card');
-
-                if (data.is_read) {
-                    btn.classList.add('bi-envelope-open');
-                    btn.classList.remove('bi-envelope');
-                    cardEl.classList.remove('border-primary');
-                    card.dataset.isRead = 'true';
-                } else {
-                    btn.classList.remove('bi-envelope-open');
-                    btn.classList.add('bi-envelope');
-                    cardEl.classList.add('border-primary');
-                    card.dataset.isRead = 'false';
-                }
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
+    function hideLoading() {
+        loadingSpinner.style.display = 'none';
     }
 
-    // Marquer comme lu au clic sur le lien
-    function markAsRead(articleId) {
-        fetch(`/api/articles/${articleId}/read`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ is_read: true })
-        }).catch(error => console.error('Erreur:', error));
+    function showNoResults() {
+        articlesContainer.style.display = 'none';
+        noResultsMessage.style.display = 'block';
     }
 
-    // Filtres de vue
-    document.getElementById('viewAll').addEventListener('change', function() {
-        if (this.checked) {
-            document.querySelectorAll('.article-card').forEach(card => {
-                card.style.display = 'block';
-            });
-        }
-    });
+    function showToast(message, type = 'info') {
+        // Toast simple sans dépendance
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
 
-    document.getElementById('viewFavorites').addEventListener('change', function() {
-        if (this.checked) {
-            document.querySelectorAll('.article-card').forEach(card => {
-                card.style.display = card.dataset.isFavorite === 'true' ? 'block' : 'none';
-            });
-        }
-    });
-
-    document.getElementById('viewUnread').addEventListener('change', function() {
-        if (this.checked) {
-            document.querySelectorAll('.article-card').forEach(card => {
-                card.style.display = card.dataset.isRead === 'false' ? 'block' : 'none';
-            });
-        }
-    });
-
-    // Export CSV
-    document.getElementById('exportCsvBtn').addEventListener('click', function() {
-        window.location.href = '/api/exports/csv';
-    });
-
-    // Export PDF
-    document.getElementById('exportPdfBtn').addEventListener('click', function() {
-        const btn = this;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        window.location.href = '/api/exports/pdf';
-
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i>';
-        }, 2000);
-    });
+    function showError(message) {
+        showToast(message, 'danger');
+    }
+})();
 </script>
 {% endblock %}
