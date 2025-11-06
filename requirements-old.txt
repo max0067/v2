@@ -1,0 +1,32 @@
+# Flask core - Versions pour Python 3.6 (anciennes mais stables)
+Flask==2.0.3
+Flask-SQLAlchemy==2.5.1
+Flask-Migrate==3.1.0
+
+# Database
+SQLAlchemy==1.4.23
+PyMySQL==1.0.2
+cryptography==3.4.8
+
+# RSS parsing
+feedparser==6.0.8
+
+# Environment variables
+python-dotenv==0.19.2
+
+# Utils
+requests==2.27.1
+python-dateutil==2.8.2
+
+# WSGI server for production
+gunicorn==20.1.0
+
+# Development
+Flask-Cors==3.0.10
+
+# Dependencies
+Werkzeug==2.0.3
+Jinja2==3.0.3
+itsdangerous==2.0.1
+click==8.0.4
+MarkupSafe==2.0.1
