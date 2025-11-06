@@ -37,9 +37,15 @@ def create_app(config_name=None):
     # Enregistrer les blueprints
     from app.routes.main import main_bp
     from app.routes.api import api_bp
+    from app.routes.favorites import favorites_bp
+    from app.routes.tags import tags_bp
+    from app.routes.exports import exports_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(favorites_bp, url_prefix='/api')
+    app.register_blueprint(tags_bp, url_prefix='/api')
+    app.register_blueprint(exports_bp, url_prefix='/api')
 
     # Context processor pour les templates
     @app.context_processor

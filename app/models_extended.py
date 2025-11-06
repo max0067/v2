@@ -1,4 +1,4 @@
-"""Modèles SQLAlchemy pour l'application."""
+"""Modèles SQLAlchemy étendus pour les fonctionnalités avancées."""
 from datetime import datetime
 from app import db
 
@@ -25,7 +25,7 @@ class Feed(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relation avec les articles
+    # Relations
     articles = db.relationship('Article', backref='feed', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
@@ -46,7 +46,7 @@ class Feed(db.Model):
 
 
 class Article(db.Model):
-    """Modèle pour les articles."""
+    """Modèle pour les articles avec favoris et tags."""
 
     __tablename__ = 'articles'
 
@@ -61,7 +61,7 @@ class Article(db.Model):
     guid = db.Column(db.String(500), unique=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Nouveaux champs pour les fonctionnalités avancées
+    # Nouveaux champs
     is_favorite = db.Column(db.Boolean, default=False)
     is_read = db.Column(db.Boolean, default=False)
     notes = db.Column(db.Text)  # Notes personnelles
@@ -70,13 +70,15 @@ class Article(db.Model):
     # Relations
     tags = db.relationship('Tag', secondary=article_tags, lazy='subquery',
                           backref=db.backref('articles', lazy=True))
-    annotations = db.relationship('Annotation', backref='article', lazy='dynamic')
+    annotations = db.relationship('Annotation', backref='article', lazy='dynamic', cascade='all, delete-orphan')
 
-    # Index pour améliorer les performances
+    # Index
     __table_args__ = (
         db.Index('idx_feed_published', 'feed_id', 'published_date'),
         db.Index('idx_guid', 'guid'),
         db.Index('idx_created', 'created_at'),
+        db.Index('idx_favorite', 'is_favorite'),
+        db.Index('idx_importance', 'importance'),
     )
 
     def __repr__(self):
@@ -100,12 +102,13 @@ class Article(db.Model):
             'is_read': self.is_read,
             'notes': self.notes,
             'importance': self.importance,
-            'tags': [{'id': tag.id, 'name': tag.name, 'color': tag.color} for tag in self.tags]
+            'tags': [tag.to_dict() for tag in self.tags],
+            'annotations_count': self.annotations.count()
         }
 
 
 class Tag(db.Model):
-    """Modèle pour les tags/étiquettes."""
+    """Modèle pour les tags."""
 
     __tablename__ = 'tags'
 
@@ -125,26 +128,25 @@ class Tag(db.Model):
             'name': self.name,
             'color': self.color,
             'description': self.description,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
             'articles_count': len(self.articles)
         }
 
 
 class Annotation(db.Model):
-    """Modèle pour les annotations d'experts sur les articles."""
+    """Modèle pour les annotations d'articles."""
 
     __tablename__ = 'annotations'
 
     id = db.Column(db.Integer, primary_key=True)
     article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    author = db.Column(db.String(255))
-    annotation_type = db.Column(db.String(50), default='note')  # note, analysis, warning
+    highlight_text = db.Column(db.Text)  # Texte surligné
+    position = db.Column(db.Integer)  # Position dans l'article
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
-        return f'<Annotation {self.id}>'
+        return f'<Annotation {self.id} for Article {self.article_id}>'
 
     def to_dict(self):
         """Convertir en dictionnaire."""
@@ -152,15 +154,15 @@ class Annotation(db.Model):
             'id': self.id,
             'article_id': self.article_id,
             'content': self.content,
-            'author': self.author,
-            'annotation_type': self.annotation_type,
+            'highlight_text': self.highlight_text,
+            'position': self.position,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 
 class LegalDeadline(db.Model):
-    """Modèle pour les échéances juridiques importantes."""
+    """Modèle pour les échéances légales."""
 
     __tablename__ = 'legal_deadlines'
 
@@ -168,21 +170,20 @@ class LegalDeadline(db.Model):
     title = db.Column(db.String(500), nullable=False)
     description = db.Column(db.Text)
     deadline_date = db.Column(db.DateTime, nullable=False)
-    category = db.Column(db.String(100))  # fiscal, social, contractuel, etc.
-    status = db.Column(db.String(50), default='pending')  # pending, completed, overdue
-    priority = db.Column(db.Integer, default=0)  # 0=normal, 1=important, 2=urgent
-    related_article_id = db.Column(db.Integer, db.ForeignKey('articles.id'))
+    category = db.Column(db.String(100))  # Type d'échéance
+    status = db.Column(db.String(50), default='pending')  # pending, completed, cancelled
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'))  # Article source
+    notification_sent = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime)
 
-    # Index pour les recherches par date
+    # Index
     __table_args__ = (
         db.Index('idx_deadline_date', 'deadline_date'),
         db.Index('idx_status', 'status'),
     )
 
     def __repr__(self):
-        return f'<LegalDeadline {self.title[:50]}>'
+        return f'<LegalDeadline {self.title}>'
 
     def to_dict(self):
         """Convertir en dictionnaire."""
@@ -193,37 +194,22 @@ class LegalDeadline(db.Model):
             'deadline_date': self.deadline_date.isoformat() if self.deadline_date else None,
             'category': self.category,
             'status': self.status,
-            'priority': self.priority,
-            'related_article_id': self.related_article_id,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None
+            'article_id': self.article_id,
+            'notification_sent': self.notification_sent,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 
 class ExportHistory(db.Model):
-    """Modèle pour l'historique des exports."""
+    """Historique des exports."""
 
     __tablename__ = 'export_history'
 
     id = db.Column(db.Integer, primary_key=True)
-    export_type = db.Column(db.String(50), nullable=False)  # pdf, csv, bibliography
-    export_format = db.Column(db.String(50))  # apa, mla, chicago (pour bibliography)
-    article_count = db.Column(db.Integer, default=0)
-    file_size = db.Column(db.Integer)  # en bytes
+    export_type = db.Column(db.String(50), nullable=False)  # pdf, csv, docx, bibliography
+    filename = db.Column(db.String(500))
+    article_ids = db.Column(db.Text)  # JSON liste des IDs
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_by = db.Column(db.String(255))
 
     def __repr__(self):
-        return f'<ExportHistory {self.export_type} - {self.created_at}>'
-
-    def to_dict(self):
-        """Convertir en dictionnaire."""
-        return {
-            'id': self.id,
-            'export_type': self.export_type,
-            'export_format': self.export_format,
-            'article_count': self.article_count,
-            'file_size': self.file_size,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'created_by': self.created_by
-        }
+        return f'<Export {self.export_type} - {self.filename}>'

@@ -21,9 +21,40 @@
             </div>
         </div>
         <div class="col-md-4 text-end">
+            <div class="btn-group mb-2" role="group">
+                <button id="exportCsvBtn" class="btn btn-outline-primary" title="Exporter en CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                </button>
+                <button id="exportPdfBtn" class="btn btn-outline-danger" title="Exporter en PDF">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                </button>
+            </div>
+            <br>
             <button id="refreshBtn" class="btn btn-success btn-lg">
                 <i class="bi bi-arrow-clockwise"></i> Actualiser les flux
             </button>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="viewAll" autocomplete="off" checked>
+                <label class="btn btn-outline-primary" for="viewAll">
+                    <i class="bi bi-list"></i> Tous
+                </label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="viewFavorites" autocomplete="off">
+                <label class="btn btn-outline-warning" for="viewFavorites">
+                    <i class="bi bi-star-fill"></i> Favoris
+                </label>
+
+                <input type="radio" class="btn-check" name="viewMode" id="viewUnread" autocomplete="off">
+                <label class="btn btn-outline-info" for="viewUnread">
+                    <i class="bi bi-envelope"></i> Non lus
+                </label>
+            </div>
         </div>
     </div>
 
@@ -59,17 +90,30 @@
         {% if articles %}
             <div class="row">
                 {% for article in articles %}
-                <div class="col-12 mb-3 article-card">
-                    <div class="card h-100 shadow-sm hover-shadow">
+                <div class="col-12 mb-3 article-card" data-article-id="{{ article.id }}" data-is-favorite="{{ article.is_favorite|lower }}" data-is-read="{{ article.is_read|lower }}">
+                    <div class="card h-100 shadow-sm hover-shadow {% if not article.is_read %}border-primary{% endif %}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title mb-0">
+                                <h5 class="card-title mb-0 flex-grow-1">
                                     <a href="{{ article.link }}"
                                        target="_blank"
-                                       class="text-decoration-none text-dark stretched-link">
+                                       class="text-decoration-none text-dark"
+                                       onclick="markAsRead({{ article.id }})">
                                         {{ article.title }}
                                     </a>
                                 </h5>
+                                <div class="ms-3 d-flex gap-2" style="position: relative; z-index: 10;">
+                                    <button class="btn btn-sm btn-outline-warning favorite-btn"
+                                            onclick="toggleFavorite(event, {{ article.id }})"
+                                            title="{% if article.is_favorite %}Retirer des favoris{% else %}Ajouter aux favoris{% endif %}">
+                                        <i class="bi bi-star{% if article.is_favorite %}-fill{% endif %}"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary read-btn"
+                                            onclick="toggleRead(event, {{ article.id }})"
+                                            title="{% if article.is_read %}Marquer comme non lu{% else %}Marquer comme lu{% endif %}">
+                                        <i class="bi bi-envelope{% if article.is_read %}-open{% endif %}"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-2">
@@ -77,10 +121,15 @@
                                     <i class="bi bi-rss"></i> {{ article.feed.name }}
                                 </span>
                                 {% if article.feed.category %}
-                                <span class="badge bg-secondary">
+                                <span class="badge bg-secondary me-2">
                                     <i class="bi bi-tag"></i> {{ article.feed.category }}
                                 </span>
                                 {% endif %}
+                                {% for tag in article.tags %}
+                                <span class="badge me-1" style="background-color: {{ tag.color }};">
+                                    {{ tag.name }}
+                                </span>
+                                {% endfor %}
                             </div>
 
                             {% if article.description %}
@@ -259,6 +308,126 @@
             btn.disabled = false;
             btn.innerHTML = originalText;
         });
+    });
+
+    // Gestion des favoris
+    function toggleFavorite(event, articleId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/api/articles/${articleId}/favorite`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                const btn = card.querySelector('.favorite-btn i');
+
+                if (data.is_favorite) {
+                    btn.classList.add('bi-star-fill');
+                    btn.classList.remove('bi-star');
+                    card.dataset.isFavorite = 'true';
+                } else {
+                    btn.classList.remove('bi-star-fill');
+                    btn.classList.add('bi-star');
+                    card.dataset.isFavorite = 'false';
+                }
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+
+    // Gestion de la lecture
+    function toggleRead(event, articleId) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-article-id="${articleId}"]`);
+                const btn = card.querySelector('.read-btn i');
+                const cardEl = card.querySelector('.card');
+
+                if (data.is_read) {
+                    btn.classList.add('bi-envelope-open');
+                    btn.classList.remove('bi-envelope');
+                    cardEl.classList.remove('border-primary');
+                    card.dataset.isRead = 'true';
+                } else {
+                    btn.classList.remove('bi-envelope-open');
+                    btn.classList.add('bi-envelope');
+                    cardEl.classList.add('border-primary');
+                    card.dataset.isRead = 'false';
+                }
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+
+    // Marquer comme lu au clic sur le lien
+    function markAsRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_read: true })
+        }).catch(error => console.error('Erreur:', error));
+    }
+
+    // Filtres de vue
+    document.getElementById('viewAll').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = 'block';
+            });
+        }
+    });
+
+    document.getElementById('viewFavorites').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = card.dataset.isFavorite === 'true' ? 'block' : 'none';
+            });
+        }
+    });
+
+    document.getElementById('viewUnread').addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.style.display = card.dataset.isRead === 'false' ? 'block' : 'none';
+            });
+        }
+    });
+
+    // Export CSV
+    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        window.location.href = '/api/exports/csv';
+    });
+
+    // Export PDF
+    document.getElementById('exportPdfBtn').addEventListener('click', function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        window.location.href = '/api/exports/pdf';
+
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i>';
+        }, 2000);
     });
 </script>
 {% endblock %}

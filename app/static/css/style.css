@@ -237,3 +237,75 @@ footer {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* Nouvelles fonctionnalités : Favoris et Tags */
+
+/* Boutons favoris et lecture */
+.favorite-btn, .read-btn {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.favorite-btn:hover {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: white !important;
+}
+
+.favorite-btn .bi-star-fill {
+    color: #ffc107;
+}
+
+.read-btn:hover {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: white !important;
+}
+
+/* Articles non lus */
+.card.border-primary {
+    border-width: 2px !important;
+    border-color: #0d6efd !important;
+}
+
+/* Badge de tag personnalisé */
+.badge[style*="background-color"] {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Filtres de vue */
+.btn-check:checked + .btn-outline-primary,
+.btn-check:checked + .btn-outline-warning,
+.btn-check:checked + .btn-outline-info {
+    font-weight: 600;
+}
+
+/* Animation pour les boutons d'action */
+.favorite-btn i,
+.read-btn i {
+    transition: transform 0.2s ease;
+}
+
+.favorite-btn:active i,
+.read-btn:active i {
+    transform: scale(1.2);
+}
+
+/* Style pour les cartes avec importance */
+.article-card[data-importance="1"] .card {
+    border-left: 4px solid #ffc107;
+}
+
+.article-card[data-importance="2"] .card {
+    border-left: 4px solid #dc3545;
+}
+
+/* Groupe de boutons export */
+.btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    z-index: 1;
+}
