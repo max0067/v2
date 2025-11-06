@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header avec stats et bouton refresh -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-3">
+                <i class="bi bi-newspaper text-primary"></i>
+                Veille Juridique
+            </h1>
+            <div class="d-flex gap-3">
+                <div class="badge bg-primary fs-6">
+                    <i class="bi bi-rss"></i> {{ total_feeds }} flux actifs
+                </div>
+                <div class="badge bg-secondary fs-6">
+                    <i class="bi bi-file-text"></i> {{ total_articles }} articles
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <button id="refreshBtn" class="btn btn-success btn-lg">
+                <i class="bi bi-arrow-clockwise"></i> Actualiser les flux
+            </button>
+        </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text"
+                       id="searchInput"
+                       class="form-control"
+                       placeholder="Rechercher dans les articles (titre, source, contenu)...">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearchBtn">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+            <small class="text-muted">Tapez au moins 2 caractères pour lancer la recherche</small>
+        </div>
+    </div>
+
+    <!-- Loading spinner -->
+    <div id="loadingSpinner" class="text-center my-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="mt-2">Chargement en cours...</p>
+    </div>
+
+    <!-- Liste des articles -->
+    <div id="articlesContainer">
+        {% if articles %}
+            <div class="row">
+                {% for article in articles %}
+                <div class="col-12 mb-3 article-card">
+                    <div class="card h-100 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a href="{{ article.link }}"
+                                       target="_blank"
+                                       class="text-decoration-none text-dark stretched-link">
+                                        {{ article.title }}
+                                    </a>
+                                </h5>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark me-2">
+                                    <i class="bi bi-rss"></i> {{ article.feed.name }}
+                                </span>
+                                {% if article.feed.category %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-tag"></i> {{ article.feed.category }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            {% if article.description %}
+                            <p class="card-text text-muted">
+                                {{ article.description[:300] }}{% if article.description|length > 300 %}...{% endif %}
+                            </p>
+                            {% endif %}
+
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar3"></i>
+                                {% if article.published_date %}
+                                    {{ article.published_date.strftime('%d/%m/%Y à %H:%M') }}
+                                {% else %}
+                                    {{ article.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                                {% endif %}
+
+                                {% if article.author %}
+                                    <i class="bi bi-person ms-3"></i> {{ article.author }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-3"></i>
+                <p class="mt-3 mb-0">
+                    Aucun article disponible. Ajoutez des flux RSS et actualisez pour commencer !
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Message de recherche vide -->
+    <div id="noResultsMessage" class="alert alert-warning text-center" style="display: none;">
+        <i class="bi bi-search fs-3"></i>
+        <p class="mt-3 mb-0">Aucun résultat trouvé pour votre recherche.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Gestion de la recherche
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const articlesContainer = document.getElementById('articlesContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            if (query.length === 0) {
+                window.location.reload();
+            }
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 500);
+    });
+
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        window.location.reload();
+    });
+
+    function performSearch(query) {
+        loadingSpinner.style.display = 'block';
+        articlesContainer.style.display = 'none';
+        noResultsMessage.style.display = 'none';
+
+        fetch(`/api/articles/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+
+                if (data.success && data.articles.length > 0) {
+                    displayArticles(data.articles);
+                } else {
+                    articlesContainer.style.display = 'none';
+                    noResultsMessage.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                loadingSpinner.style.display = 'none';
+                alert('Erreur lors de la recherche');
+            });
+    }
+
+    function displayArticles(articles) {
+        let html = '<div class="row">';
+
+        articles.forEach(article => {
+            const publishedDate = article.published_date
+                ? new Date(article.published_date).toLocaleString('fr-FR')
+                : new Date(article.created_at).toLocaleString('fr-FR');
+
+            const description = article.description
+                ? (article.description.length > 300
+                    ? article.description.substring(0, 300) + '...'
+                    : article.description)
+                : '';
+
+            html += `
+                <div class="col-12 mb-3 article-card">
+                    <div class="card h-100 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="${article.link}" target="_blank" class="text-decoration-none text-dark">
+                                    ${article.title}
+                                </a>
+                            </h5>
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark me-2">
+                                    <i class="bi bi-rss"></i> ${article.feed_name}
+                                </span>
+                                ${article.feed_category ? `
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-tag"></i> ${article.feed_category}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            ${description ? `<p class="card-text text-muted">${description}</p>` : ''}
+                            <div class="text-muted small">
+                                <i class="bi bi-calendar3"></i> ${publishedDate}
+                                ${article.author ? `<i class="bi bi-person ms-3"></i> ${article.author}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        articlesContainer.innerHTML = html;
+        articlesContainer.style.display = 'block';
+    }
+
+    // Gestion de l'actualisation des flux
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Actualisation...';
+
+        fetch('/api/feeds/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'actualisation des flux');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+</script>
+{% endblock %}

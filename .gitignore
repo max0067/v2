@@ -1,9 +1,47 @@
 # Configuration sensible
 config/config.php
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Migrations (git peut les inclure ou non selon votre choix)
+# migrations/
 
 # Logs
 *.log
 /var/log/
+logs/
 
 # Backups
 *.sql
@@ -12,9 +50,11 @@ config/config.php
 *.zip
 backup_*
 
-# Environnement
-.env
-.env.local
+# Environnement virtuel
+venv/
+env/
+ENV/
+.venv
 
 # Système
 .DS_Store
@@ -25,10 +65,14 @@ Thumbs.db
 *.swo
 *~
 
-# Dépendances (si composer est utilisé plus tard)
+# Dépendances
 /vendor/
+node_modules/
 
 # Cache
 cache/
 tmp/
 temp/
+.pytest_cache/
+.coverage
+htmlcov/

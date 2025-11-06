@@ -1,0 +1,24 @@
+# Flask core
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+
+# Database
+PyMySQL==1.1.0
+cryptography==41.0.7
+
+# RSS parsing
+feedparser==6.0.11
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Utils
+requests==2.31.0
+python-dateutil==2.8.2
+
+# WSGI server for production
+gunicorn==21.2.0
+
+# Development
+Flask-Cors==4.0.0
