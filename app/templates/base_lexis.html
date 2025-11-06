@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/lexis.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header professionnel -->
+    <header class="lexis-header">
+        <div class="header-container">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="bi bi-newspaper"></i>
+                    <div class="logo-text">
+                        <span class="logo-title">Veille Juridique</span>
+                        <span class="logo-subtitle">Plateforme de veille professionnelle</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="global-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="globalSearchInput" placeholder="Rechercher dans tous les articles...">
+                    <button class="search-clear" id="globalSearchClear" style="display: none;">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <a href="{{ url_for('main.manage_feeds') }}" class="header-btn" title="Gérer les flux RSS">
+                    <i class="bi bi-rss"></i>
+                    <span>Flux RSS</span>
+                </a>
+                <button class="header-btn" title="Paramètres">
+                    <i class="bi bi-gear"></i>
+                </button>
+                <div class="user-profile">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <div class="lexis-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- Script de recherche globale -->
+    <script>
+    (function() {
+        const searchInput = document.getElementById('globalSearchInput');
+        const clearBtn = document.getElementById('globalSearchClear');
+        let searchTimeout;
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+
+                clearBtn.style.display = query ? 'flex' : 'none';
+
+                if (query.length < 2) return;
+
+                searchTimeout = setTimeout(() => {
+                    const event = new CustomEvent('globalSearch', { detail: { query } });
+                    document.dispatchEvent(event);
+                }, 300);
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                clearBtn.style.display = 'none';
+                searchInput.focus();
+                const quickSearch = document.getElementById('quickSearch');
+                if (quickSearch) {
+                    quickSearch.value = '';
+                    quickSearch.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        // Écouter la recherche globale
+        document.addEventListener('globalSearch', function(e) {
+            const quickSearch = document.getElementById('quickSearch');
+            if (quickSearch) {
+                quickSearch.value = e.detail.query;
+                quickSearch.dispatchEvent(new Event('input'));
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

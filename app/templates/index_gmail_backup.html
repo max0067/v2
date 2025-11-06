@@ -1,0 +1,459 @@
+{% extends "base_gmail.html" %}
+
+{% block title %}Accueil - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="gmail-layout">
+    <!-- Sidebar gauche -->
+    <aside class="sidebar">
+        <div class="sidebar-content">
+            <!-- Bouton compose -->
+            <button id="refreshBtn" class="compose-btn">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Actualiser</span>
+            </button>
+
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-filter="all">
+                    <i class="bi bi-inbox"></i>
+                    <span>Tous les articles</span>
+                    <span class="count" id="allCount">{{ total_articles }}</span>
+                </a>
+                <a href="#" class="nav-item" data-filter="favorites">
+                    <i class="bi bi-star"></i>
+                    <span>Favoris</span>
+                    <span class="count" id="favCount">0</span>
+                </a>
+                <a href="#" class="nav-item" data-filter="unread">
+                    <i class="bi bi-envelope"></i>
+                    <span>Non lus</span>
+                    <span class="count" id="unreadCount">0</span>
+                </a>
+            </nav>
+
+            <!-- Catégories -->
+            <div class="sidebar-section">
+                <div class="section-title">Catégories</div>
+                <div id="categoriesList">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="sidebar-footer">
+                <div class="stat-item">
+                    <i class="bi bi-rss text-primary"></i>
+                    {{ total_feeds }} flux
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="main-content">
+        <!-- Barre d'outils -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="selectAll" class="gmail-checkbox">
+                </div>
+                <div class="toolbar-actions" id="bulkActions" style="display: none;">
+                    <button class="tool-btn" title="Marquer comme favori">
+                        <i class="bi bi-star"></i>
+                    </button>
+                    <button class="tool-btn" title="Marquer comme lu">
+                        <i class="bi bi-envelope-open"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <button class="tool-btn" id="exportCsvBtn" title="Exporter CSV">
+                    <i class="bi bi-download"></i>
+                </button>
+                <button class="tool-btn" id="exportPdfBtn" title="Exporter PDF">
+                    <i class="bi bi-file-pdf"></i>
+                </button>
+                <div class="pagination-info">
+                    <span id="paginationText">1-50 sur {{ total_articles }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des articles -->
+        <div class="articles-list" id="articlesContainer">
+            {% if articles %}
+                {% for article in articles %}
+                <div class="article-row {% if not article.is_read %}unread{% endif %}"
+                     data-article-id="{{ article.id }}"
+                     data-is-favorite="{{ 'true' if article.is_favorite else 'false' }}"
+                     data-is-read="{{ 'true' if article.is_read else 'false' }}"
+                     data-category="{{ article.feed.category or '' }}">
+
+                    <div class="article-checkbox">
+                        <input type="checkbox" class="gmail-checkbox article-check" data-id="{{ article.id }}">
+                    </div>
+
+                    <div class="article-star" data-article-id="{{ article.id }}">
+                        <i class="bi bi-star{% if article.is_favorite %}-fill starred{% endif %}"></i>
+                    </div>
+
+                    <div class="article-content" onclick="openArticle('{{ article.link }}', {{ article.id }})">
+                        <div class="article-header">
+                            <span class="article-source">{{ article.feed.name }}</span>
+                            {% if article.feed.category %}
+                            <span class="article-category">{{ article.feed.category }}</span>
+                            {% endif %}
+                            {% for tag in article.tags %}
+                            <span class="article-tag" style="background-color: {{ tag.color }}20; color: {{ tag.color }};">
+                                {{ tag.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="article-title">
+                            {{ article.title }}
+                        </div>
+
+                        {% if article.description %}
+                        <div class="article-snippet">
+                            {{ article.description[:150] }}{% if article.description|length > 150 %}...{% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="article-meta">
+                            <span class="article-date">
+                                {% if article.published_date %}
+                                    {{ article.published_date.strftime('%d %b') }}
+                                {% else %}
+                                    {{ article.created_at.strftime('%d %b') }}
+                                {% endif %}
+                            </span>
+                            {% if article.author %}
+                            <span class="article-author">• {{ article.author }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="article-actions">
+                        <button class="action-btn read-btn" data-article-id="{{ article.id }}" title="Marquer comme {% if article.is_read %}non lu{% else %}lu{% endif %}">
+                            <i class="bi bi-envelope{% if article.is_read %}-open{% endif %}"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h3>Aucun article</h3>
+                    <p>Ajoutez des flux RSS pour commencer</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingSpinner" class="loading-state" style="display: none;">
+            <div class="spinner"></div>
+            <p>Chargement...</p>
+        </div>
+
+        <!-- No results -->
+        <div id="noResults" class="empty-state" style="display: none;">
+            <i class="bi bi-search"></i>
+            <h3>Aucun résultat</h3>
+            <p>Essayez une autre recherche</p>
+        </div>
+    </main>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    let selectedArticles = new Set();
+    let currentFilter = 'all';
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        initEventListeners();
+        updateCounts();
+        loadCategories();
+    });
+
+    function initEventListeners() {
+        // Sidebar navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', handleNavClick);
+        });
+
+        // Select all
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', handleSelectAll);
+        }
+
+        // Article checkboxes
+        document.querySelectorAll('.article-check').forEach(checkbox => {
+            checkbox.addEventListener('change', handleArticleCheck);
+        });
+
+        // Star buttons (délégation)
+        document.addEventListener('click', function(e) {
+            const star = e.target.closest('.article-star');
+            if (star) {
+                e.stopPropagation();
+                toggleFavorite(star.dataset.articleId);
+            }
+
+            const readBtn = e.target.closest('.read-btn');
+            if (readBtn) {
+                e.stopPropagation();
+                toggleRead(readBtn.dataset.articleId);
+            }
+        });
+
+        // Refresh
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshFeeds);
+        }
+
+        // Export
+        document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
+            window.location.href = '/api/export/csv';
+        });
+
+        document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
+            window.location.href = '/api/export/pdf/0';
+        });
+    }
+
+    function handleNavClick(e) {
+        e.preventDefault();
+        const filter = this.dataset.filter;
+
+        // Update active state
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        this.classList.add('active');
+
+        // Filter articles
+        filterArticles(filter);
+    }
+
+    function filterArticles(filter) {
+        currentFilter = filter;
+        const articles = document.querySelectorAll('.article-row');
+
+        articles.forEach(article => {
+            let show = false;
+
+            if (filter === 'all') {
+                show = true;
+            } else if (filter === 'favorites') {
+                show = article.dataset.isFavorite === 'true';
+            } else if (filter === 'unread') {
+                show = article.dataset.isRead === 'false';
+            } else {
+                // Category filter
+                show = article.dataset.category === filter;
+            }
+
+            article.style.display = show ? 'flex' : 'none';
+        });
+    }
+
+    function handleSelectAll(e) {
+        const checked = e.target.checked;
+        const visibleArticles = Array.from(document.querySelectorAll('.article-row'))
+            .filter(row => row.style.display !== 'none');
+
+        visibleArticles.forEach(article => {
+            const checkbox = article.querySelector('.article-check');
+            checkbox.checked = checked;
+
+            if (checked) {
+                selectedArticles.add(article.dataset.articleId);
+                article.classList.add('selected');
+            } else {
+                selectedArticles.delete(article.dataset.articleId);
+                article.classList.remove('selected');
+            }
+        });
+
+        updateBulkActions();
+    }
+
+    function handleArticleCheck(e) {
+        const articleId = this.dataset.id;
+        const row = this.closest('.article-row');
+
+        if (this.checked) {
+            selectedArticles.add(articleId);
+            row.classList.add('selected');
+        } else {
+            selectedArticles.delete(articleId);
+            row.classList.remove('selected');
+        }
+
+        updateBulkActions();
+    }
+
+    function updateBulkActions() {
+        const bulkActions = document.getElementById('bulkActions');
+        bulkActions.style.display = selectedArticles.size > 0 ? 'flex' : 'none';
+    }
+
+    function toggleFavorite(articleId) {
+        fetch(`/api/articles/${articleId}/favorite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`[data-article-id="${articleId}"]`);
+                row.dataset.isFavorite = data.is_favorite ? 'true' : 'false';
+
+                const star = row.querySelector('.article-star i');
+                if (data.is_favorite) {
+                    star.classList.add('bi-star-fill', 'starred');
+                    star.classList.remove('bi-star');
+                } else {
+                    star.classList.remove('bi-star-fill', 'starred');
+                    star.classList.add('bi-star');
+                }
+
+                updateCounts();
+                showToast(data.is_favorite ? 'Ajouté aux favoris' : 'Retiré des favoris');
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function toggleRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`[data-article-id="${articleId}"]`);
+                row.dataset.isRead = data.is_read ? 'true' : 'false';
+
+                if (data.is_read) {
+                    row.classList.remove('unread');
+                } else {
+                    row.classList.add('unread');
+                }
+
+                const icon = row.querySelector('.read-btn i');
+                icon.className = data.is_read ? 'bi bi-envelope-open' : 'bi bi-envelope';
+
+                updateCounts();
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function openArticle(url, articleId) {
+        // Mark as read
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_read: true })
+        }).catch(err => console.error(err));
+
+        // Open in new tab
+        window.open(url, '_blank');
+    }
+
+    function updateCounts() {
+        const allArticles = document.querySelectorAll('.article-row');
+        let favCount = 0;
+        let unreadCount = 0;
+
+        allArticles.forEach(article => {
+            if (article.dataset.isFavorite === 'true') favCount++;
+            if (article.dataset.isRead === 'false') unreadCount++;
+        });
+
+        document.getElementById('favCount').textContent = favCount;
+        document.getElementById('unreadCount').textContent = unreadCount;
+    }
+
+    function loadCategories() {
+        const articles = document.querySelectorAll('.article-row');
+        const categories = new Set();
+
+        articles.forEach(article => {
+            const cat = article.dataset.category;
+            if (cat) categories.add(cat);
+        });
+
+        const categoriesList = document.getElementById('categoriesList');
+        categories.forEach(cat => {
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'category-item';
+            link.dataset.filter = cat;
+            link.innerHTML = `<i class="bi bi-tag"></i><span>${cat}</span>`;
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                filterArticles(cat);
+            });
+            categoriesList.appendChild(link);
+        });
+    }
+
+    function refreshFeeds() {
+        const btn = document.getElementById('refreshBtn');
+        const icon = btn.querySelector('i');
+
+        icon.classList.add('rotating');
+        btn.disabled = true;
+
+        fetch('/api/feeds/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Flux actualisés !', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error);
+            }
+        })
+        .catch(err => {
+            showToast('Erreur lors de l\'actualisation', 'error');
+            icon.classList.remove('rotating');
+            btn.disabled = false;
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+})();
+</script>
+{% endblock %}
