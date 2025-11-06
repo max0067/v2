@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gmail.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header simple façon Gmail -->
+    <header class="gmail-header">
+        <div class="header-left">
+            <button class="menu-btn" id="menuToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="logo">
+                <i class="bi bi-newspaper"></i>
+                <span>Veille Juridique</span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="search-box">
+                <i class="bi bi-search"></i>
+                <input type="text" id="globalSearch" placeholder="Rechercher dans les articles">
+                <button class="search-clear" id="clearSearch" style="display: none;">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="icon-btn" title="Aide">
+                <i class="bi bi-question-circle"></i>
+            </button>
+            <button class="icon-btn" title="Paramètres">
+                <i class="bi bi-gear"></i>
+            </button>
+            <div class="user-menu">
+                <button class="user-avatar">
+                    <i class="bi bi-person-circle"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <div class="gmail-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- Script de recherche globale -->
+    <script>
+    (function() {
+        const searchInput = document.getElementById('globalSearch');
+        const clearBtn = document.getElementById('clearSearch');
+        let searchTimeout;
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+
+                // Show/hide clear button
+                clearBtn.style.display = query ? 'block' : 'none';
+
+                if (query.length < 2) {
+                    if (query.length === 0) {
+                        showAllArticles();
+                    }
+                    return;
+                }
+
+                searchTimeout = setTimeout(() => performGlobalSearch(query), 300);
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                clearBtn.style.display = 'none';
+                showAllArticles();
+                searchInput.focus();
+            });
+        }
+
+        function performGlobalSearch(query) {
+            const articles = document.querySelectorAll('.article-row');
+            const lowerQuery = query.toLowerCase();
+            let foundCount = 0;
+
+            articles.forEach(article => {
+                const title = article.querySelector('.article-title').textContent.toLowerCase();
+                const snippet = article.querySelector('.article-snippet')?.textContent.toLowerCase() || '';
+                const source = article.querySelector('.article-source').textContent.toLowerCase();
+
+                const matches = title.includes(lowerQuery) ||
+                               snippet.includes(lowerQuery) ||
+                               source.includes(lowerQuery);
+
+                article.style.display = matches ? 'flex' : 'none';
+                if (matches) foundCount++;
+            });
+
+            // Update pagination text
+            const paginationText = document.getElementById('paginationText');
+            if (paginationText) {
+                paginationText.textContent = `${foundCount} résultat${foundCount > 1 ? 's' : ''}`;
+            }
+        }
+
+        function showAllArticles() {
+            const articles = document.querySelectorAll('.article-row');
+            articles.forEach(article => {
+                article.style.display = 'flex';
+            });
+
+            const paginationText = document.getElementById('paginationText');
+            if (paginationText) {
+                const total = articles.length;
+                paginationText.textContent = `${total} article${total > 1 ? 's' : ''}`;
+            }
+        }
+
+        // Menu toggle for mobile
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        if (menuToggle && sidebar) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('mobile-open');
+            });
+        }
+    })();
+    </script>
+</body>
+</html>
