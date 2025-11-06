@@ -98,7 +98,7 @@
                         <i class="bi bi-star{% if article.is_favorite %}-fill starred{% endif %}"></i>
                     </div>
 
-                    <div class="article-content" onclick="openArticle('{{ article.link }}', {{ article.id }})">
+                    <div class="article-content" data-article-url="{{ article.link }}" data-article-id="{{ article.id }}">
                         <div class="article-header">
                             <span class="article-source">{{ article.feed.name }}</span>
                             {% if article.feed.category %}
@@ -202,18 +202,30 @@
             checkbox.addEventListener('change', handleArticleCheck);
         });
 
-        // Star buttons (délégation)
+        // Event delegation for clicks
         document.addEventListener('click', function(e) {
             const star = e.target.closest('.article-star');
             if (star) {
                 e.stopPropagation();
                 toggleFavorite(star.dataset.articleId);
+                return;
             }
 
             const readBtn = e.target.closest('.read-btn');
             if (readBtn) {
                 e.stopPropagation();
                 toggleRead(readBtn.dataset.articleId);
+                return;
+            }
+
+            // Click sur le contenu de l'article
+            const articleContent = e.target.closest('.article-content');
+            if (articleContent) {
+                const url = articleContent.dataset.articleUrl;
+                const articleId = articleContent.dataset.articleId;
+                if (url) {
+                    openArticle(url, articleId);
+                }
             }
         });
 
