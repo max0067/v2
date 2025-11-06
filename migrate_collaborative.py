@@ -13,10 +13,6 @@ Ce script ajoute :
 """
 import sys
 import os
-from dotenv import load_dotenv
-
-# Charger le fichier .env
-load_dotenv()
 
 # Ajouter le chemin de l'application
 sys.path.insert(0, os.path.dirname(__file__))
