@@ -17,6 +17,19 @@ import os
 # Ajouter le chemin de l'application
 sys.path.insert(0, os.path.dirname(__file__))
 
+# Charger les variables d'environnement depuis .env si le fichier existe
+env_file = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(env_file):
+    print(f"📄 Chargement de la configuration depuis {env_file}")
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ.setdefault(key.strip(), value.strip())
+else:
+    print("⚠️  Fichier .env non trouvé, utilisation des variables d'environnement système")
+
 from app import create_app, db
 from app.models_collab import (User, Folder, ArticleFolder, FolderShare,
                                 ArticleNote, ArticleHighlight, ArticleComment,
