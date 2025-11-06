@@ -46,12 +46,8 @@ def refresh_all_feeds():
             try:
                 print(f"  📥 {feed.name}...", end=" ", flush=True)
 
-                # Parser le flux
-                new_articles = parser.parse_feed(feed.url, feed.id)
-
-                # Mettre à jour la date de dernière récupération
-                feed.last_fetch = datetime.utcnow()
-                db.session.commit()
+                # Parser le flux et sauvegarder les articles
+                new_articles = parser.fetch_and_save(feed)
 
                 total_new_articles += new_articles
                 success_count += 1
