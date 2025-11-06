@@ -1,0 +1,102 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║         📍 CHEMINS ET FICHIERS - APPLICATION VEILLE JURIDIQUE        ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🎯 CHEMIN DE L'APPLICATION DANS CE CONTENEUR :
+   /home/user/v2/veille_juridique/
+
+📦 ARCHIVE PRÊTE À TÉLÉCHARGER :
+   /home/user/v2/veille_juridique.tar.gz (46 KB)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 FICHIERS À COPIER SUR VOTRE SERVEUR :
+
+✅ FICHIERS PYTHON ESSENTIELS :
+   • app.py                    (12 KB) - Application principale Flask
+   • wsgi.py                   (364 B) - Point d'entrée WSGI pour production
+   • config.py                 (1.7 KB) - Configuration (dev/prod/test)
+   • models.py                 (2.8 KB) - Modèles de base de données
+   • requirements.txt          (131 B) - Liste des dépendances Python
+   • gunicorn_config.py        (890 B) - Configuration Gunicorn
+
+✅ SCRIPTS :
+   • start.sh                  (627 B) - Script de démarrage
+   • INSTALLATION_SERVEUR.sh   (1.5 KB) - Installation automatique
+
+✅ DOSSIERS :
+   • templates/                - Templates HTML (base.html, dashboard.html, feeds.html)
+   • static/                   - CSS et JavaScript
+      ├── css/style.css
+      └── js/app.js
+
+✅ DOCUMENTATION :
+   • README_FLASK.md           (7.1 KB) - Documentation complète
+   • DEPLOIEMENT_CPANEL.md     (6.4 KB) - Guide déploiement cPanel
+   • DEPLOIEMENT_RAPIDE.md     (3.2 KB) - Guide rapide
+   • ACCES_DUSSELLE_FR.md      (6.4 KB) - Solutions accès dusselle.fr
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 COMMENT TRANSFÉRER SUR VOTRE SERVEUR :
+
+Option 1 - Via cPanel File Manager (⭐ RECOMMANDÉ) :
+   1. Téléchargez : veille_juridique.tar.gz
+   2. Connectez-vous à cPanel sur dusselle.fr
+   3. File Manager → votre répertoire app (voir "Application Root" dans Setup Python App)
+   4. Upload → veille_juridique.tar.gz
+   5. Clic droit → Extract
+
+Option 2 - Via Git :
+   Sur votre serveur :
+   git clone <url-repo> temp
+   cd temp
+   git checkout claude/legal-rss-monitoring-app-011CUqNqkGBZNE7ayYqntiii
+   cp -r veille_juridique/* ~/votre-app-directory/
+
+Option 3 - Via SCP/SFTP :
+   scp veille_juridique.tar.gz wrbh3411@dusselle.fr:~/votre-app-directory/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 APRÈS LE TRANSFERT, SUR VOTRE SERVEUR :
+
+cd ~/votre-app-directory    # Remplacez par le bon chemin
+source venv/bin/activate     # Activer l'environnement virtuel
+pip install -r requirements.txt
+python app.py --init         # Initialiser la base de données
+python app.py --sample       # Ajouter des flux d'exemple
+
+Puis dans cPanel → Setup Python App → Restart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ TROUVER LE BON RÉPERTOIRE SUR VOTRE SERVEUR :
+
+Dans cPanel → Setup Python App → votre application
+Regardez la ligne "Application Root" - c'est le chemin !
+
+Exemples possibles :
+   • veille_app
+   • public_html/veille
+   • www/python_app
+   • htdocs/app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CHECKLIST RAPIDE :
+
+□ Archive téléchargée : veille_juridique.tar.gz
+□ Archive uploadée sur le serveur via cPanel
+□ Archive extraite dans le bon répertoire
+□ Dépendances installées : pip install -r requirements.txt
+□ Base de données initialisée : python app.py --init
+□ Flux ajoutés : python app.py --sample
+□ Application redémarrée dans cPanel
+□ Test : https://dusselle.fr/ fonctionne !
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 BESOIN D'AIDE ?
+
+Lisez INSTRUCTIONS_DEPLOYMENT.md pour le guide complet étape par étape !
