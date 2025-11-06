@@ -1,0 +1,942 @@
+{% extends "base_lexis.html" %}
+
+{% block title %}Veille Juridique - {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Folders Section */
+.folders-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--lexis-gray-200);
+    padding-bottom: 15px;
+}
+
+.folders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.folders-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--lexis-blue-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-add-folder {
+    background: none;
+    border: none;
+    color: var(--lexis-accent);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-add-folder:hover {
+    background: var(--lexis-gray-100);
+}
+
+.folders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.folder-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.folder-item:hover {
+    background: var(--lexis-gray-100);
+}
+
+.folder-item.active {
+    background: var(--lexis-accent);
+    color: white;
+}
+
+.folder-icon {
+    width: 20px;
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.folder-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.folder-count {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-left: 8px;
+}
+
+.folder-actions {
+    display: none;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.folder-item:hover .folder-actions {
+    display: flex;
+}
+
+.folder-action-btn {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 12px;
+}
+
+.folder-action-btn:hover {
+    opacity: 1;
+}
+
+/* Article Collaborative Actions */
+.card-collab-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--lexis-gray-200);
+}
+
+.collab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px;
+    background: none;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--lexis-gray-600);
+    transition: all 0.2s;
+}
+
+.collab-btn:hover {
+    background: var(--lexis-gray-100);
+    border-color: var(--lexis-accent);
+    color: var(--lexis-accent);
+}
+
+.collab-btn.active {
+    background: var(--lexis-accent);
+    border-color: var(--lexis-accent);
+    color: white;
+}
+
+.collab-count {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--lexis-gray-200);
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+.collab-btn.active .collab-count {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+/* Article Detail Panel */
+.article-detail-panel {
+    position: fixed;
+    top: 0;
+    right: -600px;
+    width: 600px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.article-detail-panel.open {
+    right: 0;
+}
+
+.panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+.panel-overlay.show {
+    display: block;
+}
+
+.panel-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--lexis-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--lexis-blue-dark);
+}
+
+.btn-close-panel {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--lexis-gray-600);
+}
+
+.panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--lexis-gray-200);
+    padding: 0 20px;
+}
+
+.panel-tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--lexis-gray-600);
+    transition: all 0.2s;
+}
+
+.panel-tab:hover {
+    color: var(--lexis-accent);
+}
+
+.panel-tab.active {
+    color: var(--lexis-accent);
+    border-bottom-color: var(--lexis-accent);
+}
+
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Notes */
+.note-item {
+    padding: 12px;
+    background: #FFF9E6;
+    border-left: 3px solid #FBBC04;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.note-meta {
+    font-size: 12px;
+    color: var(--lexis-gray-600);
+}
+
+.note-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.note-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.note-form {
+    margin-bottom: 20px;
+}
+
+.note-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 6px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+/* Comments */
+.comment-item {
+    padding: 12px;
+    border-bottom: 1px solid var(--lexis-gray-200);
+    margin-bottom: 12px;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--lexis-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: var(--lexis-gray-600);
+}
+
+.comment-text {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+}
+
+.comment-action {
+    color: var(--lexis-accent);
+    cursor: pointer;
+}
+
+/* Highlights */
+.highlight-item {
+    padding: 12px;
+    background: white;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.highlight-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.highlight-text {
+    background: #FFFF00;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+/* Attachments */
+.attachment-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.attachment-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--lexis-gray-100);
+    border-radius: 6px;
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.attachment-info {
+    flex: 1;
+}
+
+.attachment-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.attachment-size {
+    font-size: 12px;
+    color: var(--lexis-gray-600);
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--lexis-gray-200);
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid var(--lexis-gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.color-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.color-option:hover,
+.color-option.selected {
+    border-color: var(--lexis-blue-dark);
+    transform: scale(1.1);
+}
+
+.icon-picker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.icon-option {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--lexis-gray-200);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+}
+
+.icon-option:hover,
+.icon-option.selected {
+    background: var(--lexis-accent);
+    color: white;
+    border-color: var(--lexis-accent);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--lexis-accent);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--lexis-blue-dark);
+}
+
+.btn-secondary {
+    background: var(--lexis-gray-200);
+    color: var(--lexis-gray-700);
+}
+
+.btn-secondary:hover {
+    background: var(--lexis-gray-300);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lexis-layout">
+    <!-- Sidebar filtres + dossiers -->
+    <aside class="lexis-sidebar">
+        <!-- Dossiers collaboratifs -->
+        <div class="folders-section">
+            <div class="folders-header">
+                <h3 class="folders-title">Mes Dossiers</h3>
+                <button class="btn-add-folder" id="btnAddFolder" title="Nouveau dossier">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+            </div>
+            <div class="folders-list" id="foldersList">
+                <div class="folder-item" data-folder-id="all">
+                    <i class="bi bi-inbox folder-icon"></i>
+                    <span class="folder-name">Tous les articles</span>
+                    <span class="folder-count">{{ total_articles }}</span>
+                </div>
+                <!-- Dossiers chargés dynamiquement -->
+            </div>
+        </div>
+
+        <div class="sidebar-header">
+            <h2>Filtres</h2>
+            <button class="btn-reset" id="resetFilters">Réinitialiser</button>
+        </div>
+
+        <!-- Recherche dans sidebar -->
+        <div class="filter-section">
+            <label class="filter-label">Recherche rapide</label>
+            <div class="search-input-wrapper">
+                <i class="bi bi-search"></i>
+                <input type="text" id="quickSearch" class="filter-input" placeholder="Mots-clés...">
+            </div>
+        </div>
+
+        <!-- Filtres de statut -->
+        <div class="filter-section">
+            <label class="filter-label">Statut</label>
+            <div class="filter-options">
+                <label class="filter-checkbox">
+                    <input type="checkbox" name="status" value="all" checked>
+                    <span>Tous les articles ({{ total_articles }})</span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" name="status" value="unread">
+                    <span>Non lus <span class="count-badge" id="unreadBadge">0</span></span>
+                </label>
+                <label class="filter-checkbox">
+                    <input type="checkbox" name="status" value="favorites">
+                    <span>Favoris <span class="count-badge starred" id="favBadge">0</span></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Filtres par période -->
+        <div class="filter-section">
+            <label class="filter-label">Période</label>
+            <select class="filter-select" id="periodFilter">
+                <option value="all">Toutes les périodes</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois-ci</option>
+                <option value="custom">Personnalisé...</option>
+            </select>
+        </div>
+
+        <!-- Filtres par source -->
+        <div class="filter-section">
+            <label class="filter-label">Sources ({{ total_feeds }})</label>
+            <div class="filter-options scrollable" id="sourcesFilter">
+                <!-- Généré dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Filtres par catégorie -->
+        <div class="filter-section">
+            <label class="filter-label">Catégories</label>
+            <div class="filter-options" id="categoriesFilter">
+                <!-- Généré dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="sidebar-actions">
+            <button class="btn-primary btn-block" id="refreshBtn">
+                <i class="bi bi-arrow-clockwise"></i> Actualiser les flux
+            </button>
+            <div class="btn-group-export">
+                <button class="btn-secondary btn-sm" id="exportCsvBtn" title="Exporter CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                </button>
+                <button class="btn-secondary btn-sm" id="exportPdfBtn" title="Exporter PDF">
+                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="lexis-main">
+        <!-- Toolbar -->
+        <div class="content-toolbar">
+            <div class="toolbar-left">
+                <h1 class="page-title">Veille Juridique</h1>
+                <span class="article-count" id="articleCount">{{ total_articles }} articles</span>
+            </div>
+            <div class="toolbar-right">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="cards" title="Vue cartes">
+                        <i class="bi bi-grid-3x2"></i>
+                    </button>
+                    <button class="view-btn" data-view="list" title="Vue liste">
+                        <i class="bi bi-list-ul"></i>
+                    </button>
+                    <button class="view-btn" data-view="timeline" title="Vue chronologique">
+                        <i class="bi bi-calendar3"></i>
+                    </button>
+                </div>
+                <select class="sort-select" id="sortSelect">
+                    <option value="date-desc">Plus récents</option>
+                    <option value="date-asc">Plus anciens</option>
+                    <option value="source">Par source</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Zone de contenu -->
+        <div class="content-area" id="contentArea">
+            <!-- Loading -->
+            <div id="loadingState" class="loading-state" style="display: none;">
+                <div class="spinner-lexis"></div>
+                <p>Chargement en cours...</p>
+            </div>
+
+            <!-- Articles -->
+            <div id="articlesGrid" class="articles-grid view-cards">
+                {% if articles %}
+                    {% for article in articles %}
+                    <article class="article-card"
+                             data-id="{{ article.id }}"
+                             data-favorite="{{ article.is_favorite|lower }}"
+                             data-read="{{ article.is_read|lower }}"
+                             data-source="{{ article.feed.name }}"
+                             data-category="{{ article.feed.category or '' }}"
+                             data-date="{{ article.published_date or article.created_at }}">
+
+                        <div class="card-header">
+                            <div class="card-meta">
+                                <span class="source-badge">{{ article.feed.name }}</span>
+                                {% if article.feed.category %}
+                                <span class="category-badge">{{ article.feed.category }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-actions">
+                                <button class="action-icon star-btn" data-id="{{ article.id }}" title="Favori">
+                                    <i class="bi bi-star{% if article.is_favorite %}-fill starred{% endif %}"></i>
+                                </button>
+                                <button class="action-icon read-btn" data-id="{{ article.id }}" title="Marquer comme lu">
+                                    <i class="bi bi-envelope{% if article.is_read %}-open{% endif %}"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body article-content" data-article-url="{{ article.link }}" data-article-id="{{ article.id }}">
+                            <h3 class="card-title {% if not article.is_read %}unread{% endif %}">
+                                {{ article.title }}
+                            </h3>
+
+                            {% if article.description %}
+                            <p class="card-description">
+                                {{ article.description[:200] }}{% if article.description|length > 200 %}...{% endif %}
+                            </p>
+                            {% endif %}
+
+                            <div class="card-footer">
+                                <span class="card-date">
+                                    <i class="bi bi-calendar3"></i>
+                                    {% if article.published_date %}
+                                        {{ article.published_date.strftime('%d %B %Y') }}
+                                    {% else %}
+                                        {{ article.created_at.strftime('%d %B %Y') }}
+                                    {% endif %}
+                                </span>
+                                {% if article.author %}
+                                <span class="card-author">
+                                    <i class="bi bi-person"></i> {{ article.author }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            {% if article.tags %}
+                            <div class="card-tags">
+                                {% for tag in article.tags %}
+                                <span class="tag" style="background-color: {{ tag.color }}15; color: {{ tag.color }}; border-color: {{ tag.color }};">
+                                    {{ tag.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions collaboratives -->
+                        <div class="card-collab-actions">
+                            <button class="collab-btn btn-folder" data-id="{{ article.id }}" title="Ajouter à un dossier">
+                                <i class="bi bi-folder-plus"></i>
+                                <span>Dossier</span>
+                            </button>
+                            <button class="collab-btn btn-note" data-id="{{ article.id }}" title="Ajouter une note">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Note</span>
+                            </button>
+                            <button class="collab-btn btn-details" data-id="{{ article.id }}" title="Voir les détails">
+                                <i class="bi bi-three-dots"></i>
+                                <span>Détails</span>
+                            </button>
+                        </div>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h3>Aucun article</h3>
+                        <p>Ajoutez des flux RSS pour commencer votre veille</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- No results -->
+            <div id="noResults" class="empty-state" style="display: none;">
+                <i class="bi bi-search"></i>
+                <h3>Aucun résultat</h3>
+                <p>Aucun article ne correspond à vos critères de recherche</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Article Detail Panel -->
+<div class="panel-overlay" id="panelOverlay"></div>
+<div class="article-detail-panel" id="articleDetailPanel">
+    <div class="panel-header">
+        <h2 class="panel-title">Détails de l'article</h2>
+        <button class="btn-close-panel" id="btnClosePanel">
+            <i class="bi bi-x"></i>
+        </button>
+    </div>
+
+    <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="notes">
+            <i class="bi bi-pencil-square"></i> Notes
+        </button>
+        <button class="panel-tab" data-tab="highlights">
+            <i class="bi bi-highlighter"></i> Surlignages
+        </button>
+        <button class="panel-tab" data-tab="comments">
+            <i class="bi bi-chat-left-text"></i> Commentaires
+        </button>
+        <button class="panel-tab" data-tab="attachments">
+            <i class="bi bi-paperclip"></i> Pièces jointes
+        </button>
+    </div>
+
+    <div class="panel-content">
+        <!-- Tab Notes -->
+        <div class="tab-pane active" id="tabNotes">
+            <div class="note-form">
+                <textarea class="note-textarea" id="noteTextarea" placeholder="Ajoutez une note privée..."></textarea>
+                <button class="btn btn-primary" id="btnSaveNote" style="margin-top: 10px;">
+                    <i class="bi bi-check2"></i> Enregistrer la note
+                </button>
+            </div>
+            <div id="notesList">
+                <!-- Notes chargées dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Tab Highlights -->
+        <div class="tab-pane" id="tabHighlights">
+            <p style="color: var(--lexis-gray-600); font-size: 14px;">
+                Les surlignages permettent de marquer les passages importants dans vos articles.
+            </p>
+            <div id="highlightsList">
+                <!-- Highlights chargés dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Tab Comments -->
+        <div class="tab-pane" id="tabComments">
+            <div class="note-form">
+                <textarea class="note-textarea" id="commentTextarea" placeholder="Ajoutez un commentaire..."></textarea>
+                <button class="btn btn-primary" id="btnSaveComment" style="margin-top: 10px;">
+                    <i class="bi bi-send"></i> Publier le commentaire
+                </button>
+            </div>
+            <div id="commentsList">
+                <!-- Commentaires chargés dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Tab Attachments -->
+        <div class="tab-pane" id="tabAttachments">
+            <div class="note-form">
+                <input type="file" id="attachmentFile" style="display: none;">
+                <button class="btn btn-primary" id="btnUploadAttachment">
+                    <i class="bi bi-upload"></i> Ajouter une pièce jointe
+                </button>
+            </div>
+            <div id="attachmentsList">
+                <!-- Pièces jointes chargées dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Ajouter à un dossier -->
+<div class="modal" id="modalAddToFolder">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 class="modal-title">Ajouter à un dossier</h3>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Sélectionner un dossier</label>
+                <select class="form-control" id="selectFolder">
+                    <option value="">Choisir...</option>
+                    <!-- Dossiers chargés dynamiquement -->
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalAddToFolder')">Annuler</button>
+            <button class="btn btn-primary" id="btnConfirmAddToFolder">Ajouter</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Créer un dossier -->
+<div class="modal" id="modalCreateFolder">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 class="modal-title">Créer un nouveau dossier</h3>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Nom du dossier</label>
+                <input type="text" class="form-control" id="folderName" placeholder="Ex: Droit social">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Couleur</label>
+                <div class="color-picker">
+                    <div class="color-option selected" data-color="#0066A1" style="background: #0066A1;"></div>
+                    <div class="color-option" data-color="#00A651" style="background: #00A651;"></div>
+                    <div class="color-option" data-color="#FF6B00" style="background: #FF6B00;"></div>
+                    <div class="color-option" data-color="#EA4335" style="background: #EA4335;"></div>
+                    <div class="color-option" data-color="#FBBC04" style="background: #FBBC04;"></div>
+                    <div class="color-option" data-color="#9C27B0" style="background: #9C27B0;"></div>
+                </div>
+                <input type="hidden" id="folderColor" value="#0066A1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icône</label>
+                <div class="icon-picker">
+                    <div class="icon-option selected" data-icon="folder"><i class="bi bi-folder"></i></div>
+                    <div class="icon-option" data-icon="briefcase"><i class="bi bi-briefcase"></i></div>
+                    <div class="icon-option" data-icon="people"><i class="bi bi-people"></i></div>
+                    <div class="icon-option" data-icon="book"><i class="bi bi-book"></i></div>
+                    <div class="icon-option" data-icon="file-text"><i class="bi bi-file-text"></i></div>
+                    <div class="icon-option" data-icon="cash"><i class="bi bi-cash"></i></div>
+                    <div class="icon-option" data-icon="shield"><i class="bi bi-shield"></i></div>
+                    <div class="icon-option" data-icon="clock"><i class="bi bi-clock"></i></div>
+                </div>
+                <input type="hidden" id="folderIcon" value="folder">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modalCreateFolder')">Annuler</button>
+            <button class="btn btn-primary" id="btnConfirmCreateFolder">Créer</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/lexis_collab.js') }}"></script>
+{% endblock %}
