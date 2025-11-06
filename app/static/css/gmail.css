@@ -166,10 +166,12 @@ body {
     justify-content: center;
     transition: background 0.2s;
     color: var(--gmail-text-secondary);
+    text-decoration: none;
 }
 
 .icon-btn:hover {
     background: var(--gmail-hover);
+    color: var(--gmail-text-secondary);
 }
 
 .user-avatar {
