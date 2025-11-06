@@ -32,7 +32,7 @@ def create_app(config_name=None):
     migrate.init_app(app, db)
 
     # Importer les modèles (nécessaire pour les migrations)
-    from app import models
+    from app import models, models_collab
 
     # Enregistrer les blueprints
     from app.routes.main import main_bp
@@ -40,12 +40,16 @@ def create_app(config_name=None):
     from app.routes.favorites import favorites_bp
     from app.routes.tags import tags_bp
     from app.routes.exports import exports_bp
+    from app.routes.folders import folders_bp
+    from app.routes.collaboration import collaboration_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(favorites_bp, url_prefix='/api')
     app.register_blueprint(tags_bp, url_prefix='/api')
     app.register_blueprint(exports_bp, url_prefix='/api')
+    app.register_blueprint(folders_bp, url_prefix='/api')
+    app.register_blueprint(collaboration_bp, url_prefix='/api')
 
     # Context processor pour les templates
     @app.context_processor
