@@ -25,7 +25,7 @@ def index():
     total_articles = Article.query.count()
 
     return render_template(
-        'index_lexis_collab.html',
+        'index_lexis.html',
         articles=articles,
         total_feeds=total_feeds,
         total_articles=total_articles
