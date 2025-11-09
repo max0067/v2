@@ -2,11 +2,9 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 
 # Initialisation des extensions
 db = SQLAlchemy()
-migrate = Migrate()
 
 
 def create_app(config_name=None):
@@ -29,7 +27,6 @@ def create_app(config_name=None):
 
     # Initialiser les extensions
     db.init_app(app)
-    migrate.init_app(app, db)
 
     # Importer les modèles (nécessaire pour les migrations)
     from app import models, models_collab
