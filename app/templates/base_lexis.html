@@ -62,6 +62,10 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- JavaScript de base -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- JavaScript supplémentaire des templates enfants -->
     {% block extra_js %}{% endblock %}
 
     <!-- Script de recherche globale -->
