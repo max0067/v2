@@ -206,3 +206,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // Exporter les utilitaires pour utilisation globale
 window.appUtils = utils;
 window.appApi = api;
+
+/**
+ * Ouvrir un article dans un nouvel onglet
+ * Cette fonction est appelée par les événements onclick dans les templates
+ */
+function openArticle(url, articleId) {
+    // Ouvrir l'article dans un nouvel onglet
+    window.open(url, '_blank');
+
+    // Marquer l'article comme lu (optionnel, en arrière-plan)
+    if (articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST'
+        }).catch(err => console.error('Erreur marquage comme lu:', err));
+    }
+}
