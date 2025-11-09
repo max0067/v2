@@ -70,7 +70,14 @@ function loadFolders() {
 
                 allFolders.forEach(folder => {
                     const div = document.createElement('div');
-                    div.style = `padding: 20px; border: 2px solid ${folder.color}; border-radius: 10px; background: ${folder.color}10;`;
+                    div.style = `padding: 20px; border: 2px solid ${folder.color}; border-radius: 10px; background: ${folder.color}10; cursor: pointer; transition: all 0.2s;`;
+                    div.onmouseenter = function() { this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; };
+                    div.onmouseleave = function() { this.style.transform = ''; this.style.boxShadow = ''; };
+                    div.onclick = function(e) {
+                        if (!e.target.closest('button')) {
+                            window.location.href = '/?folder=' + folder.id;
+                        }
+                    };
                     div.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div>

@@ -1,6 +1,7 @@
 """Routes principales de l'application (pages web)."""
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, request
 from app.models import Article, Feed
+from app.models_collab import Folder, ArticleFolder
 from sqlalchemy import desc
 
 main_bp = Blueprint('main', __name__)
@@ -9,26 +10,44 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 def index():
     """Page d'accueil avec liste des articles."""
-    page = 1
-    per_page = current_app.config.get('ITEMS_PER_PAGE', 50)
+    folder_id = request.args.get('folder', type=int)
+    search_query = request.args.get('q', '').strip()
 
     # Récupérer les articles récents
-    articles = Article.query\
-        .join(Feed)\
-        .filter(Feed.is_active == True)\
-        .order_by(desc(Article.published_date))\
-        .limit(per_page)\
-        .all()
+    query = Article.query.join(Feed).filter(Feed.is_active == True)
+
+    # Filtrer par dossier si spécifié
+    if folder_id:
+        query = query.join(ArticleFolder).filter(ArticleFolder.folder_id == folder_id)
+
+    # Filtrer par recherche si spécifié
+    if search_query:
+        search_pattern = f'%{search_query}%'
+        query = query.filter(
+            (Article.title.like(search_pattern)) |
+            (Article.description.like(search_pattern))
+        )
+
+    # Récupérer tous les articles (pas de limite pour l'instant)
+    articles = query.order_by(desc(Article.published_date)).all()
 
     # Récupérer les statistiques
     total_feeds = Feed.query.filter_by(is_active=True).count()
     total_articles = Article.query.count()
 
+    # Récupérer le nom du dossier si filtré
+    folder_name = None
+    if folder_id:
+        folder = Folder.query.get(folder_id)
+        if folder:
+            folder_name = folder.name
+
     return render_template(
         'index_simple.html',
         articles=articles,
         total_feeds=total_feeds,
-        total_articles=total_articles
+        total_articles=total_articles,
+        folder_name=folder_name
     )
 
 
