@@ -25,7 +25,7 @@ def index():
     total_articles = Article.query.count()
 
     return render_template(
-        'index_lexis.html',
+        'index_simple.html',
         articles=articles,
         total_feeds=total_feeds,
         total_articles=total_articles
@@ -47,6 +47,12 @@ def manage_feeds():
         'manage_feeds.html',
         feeds=feeds_with_counts
     )
+
+
+@main_bp.route('/manage-folders')
+def manage_folders():
+    """Page de gestion des dossiers."""
+    return render_template('manage_folders.html')
 
 
 @main_bp.route('/about')
