@@ -6,6 +6,18 @@
 <div class="lexis-layout">
     <!-- Sidebar filtres -->
     <aside class="lexis-sidebar">
+        <!-- Dossiers -->
+        <div class="filter-section" style="border-bottom: 2px solid var(--lexis-gray-200); padding-bottom: 15px; margin-bottom: 15px;">
+            <label class="filter-label">📁 Mes Dossiers</label>
+            <div class="filter-options" id="foldersList">
+                <label class="filter-checkbox">
+                    <input type="radio" name="folder" value="all" checked>
+                    <span>Tous les articles</span>
+                </label>
+                <!-- Dossiers chargés ici -->
+            </div>
+        </div>
+
         <div class="sidebar-header">
             <h2>Filtres</h2>
             <button class="btn-reset" id="resetFilters">Réinitialiser</button>
@@ -518,6 +530,45 @@
             timeout = setTimeout(later, wait);
         };
     }
+
+    // Charger les dossiers
+    function loadFolders() {
+        fetch('/api/folders')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const foldersList = document.getElementById('foldersList');
+                    const allFolders = [...data.own_folders, ...data.shared_folders];
+
+                    allFolders.forEach(folder => {
+                        const label = document.createElement('label');
+                        label.className = 'filter-checkbox';
+                        label.innerHTML = `
+                            <input type="radio" name="folder" value="${folder.id}">
+                            <span style="color: ${folder.color}">${folder.icon ? '📁' : ''} ${folder.name}</span>
+                        `;
+                        foldersList.appendChild(label);
+                    });
+
+                    // Activer le filtrage par dossier
+                    document.querySelectorAll('input[name="folder"]').forEach(radio => {
+                        radio.addEventListener('change', function() {
+                            if (this.value === 'all') {
+                                allArticles.forEach(article => article.style.display = '');
+                            } else {
+                                // Pour l'instant, afficher tous (le mapping article->dossier sera fait plus tard)
+                                allArticles.forEach(article => article.style.display = '');
+                            }
+                            applyFilters();
+                        });
+                    });
+                }
+            })
+            .catch(err => console.log('Pas de dossiers'));
+    }
+
+    // Charger les dossiers au démarrage
+    loadFolders();
 })();
 </script>
 {% endblock %}
