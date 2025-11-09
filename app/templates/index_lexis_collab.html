@@ -935,6 +935,330 @@
     </div>
 </div>
 
+<script>
+(function() {
+    'use strict';
+
+    let currentView = 'cards';
+    let allArticles = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeApp();
+    });
+
+    function initializeApp() {
+        loadArticles();
+        attachEventListeners();
+        updateCounts();
+        loadFilters();
+    }
+
+    function loadArticles() {
+        allArticles = Array.from(document.querySelectorAll('.article-card'));
+    }
+
+    function attachEventListeners() {
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                switchView(this.dataset.view);
+            });
+        });
+
+        // Filtres
+        document.getElementById('quickSearch')?.addEventListener('input', debounce(applyFilters, 300));
+        document.getElementById('periodFilter')?.addEventListener('change', applyFilters);
+        document.getElementById('sortSelect')?.addEventListener('change', sortArticles);
+        document.getElementById('resetFilters')?.addEventListener('click', resetFilters);
+
+        // Actions (délégation)
+        document.addEventListener('click', function(e) {
+            const starBtn = e.target.closest('.star-btn');
+            const readBtn = e.target.closest('.read-btn');
+
+            if (starBtn) {
+                e.stopPropagation();
+                toggleFavorite(starBtn.dataset.id);
+            } else if (readBtn) {
+                e.stopPropagation();
+                toggleRead(readBtn.dataset.id);
+            }
+        });
+
+        // Actualisation
+        document.getElementById('refreshBtn')?.addEventListener('click', refreshFeeds);
+
+        // Export
+        document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
+            window.location.href = '/api/export/csv';
+        });
+        document.getElementById('exportPdfBtn')?.addEventListener('click', () => {
+            window.location.href = '/api/export/pdf/0';
+        });
+
+        // Filtres checkbox
+        document.querySelectorAll('input[name="status"]').forEach(checkbox => {
+            checkbox.addEventListener('change', applyFilters);
+        });
+    }
+
+    function switchView(view) {
+        currentView = view;
+        const grid = document.getElementById('articlesGrid');
+        grid.className = `articles-grid view-${view}`;
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('quickSearch')?.value?.toLowerCase() || '';
+        const period = document.getElementById('periodFilter')?.value || 'all';
+        const statusFilters = Array.from(document.querySelectorAll('input[name="status"]:checked')).map(cb => cb.value);
+
+        let visibleCount = 0;
+
+        allArticles.forEach(article => {
+            let show = true;
+
+            // Recherche
+            if (search) {
+                const title = article.querySelector('.card-title')?.textContent?.toLowerCase() || '';
+                const desc = article.querySelector('.card-description')?.textContent?.toLowerCase() || '';
+                show = show && (title.includes(search) || desc.includes(search));
+            }
+
+            // Statut
+            if (statusFilters.length > 0 && !statusFilters.includes('all')) {
+                const isUnread = article.dataset.read === 'false';
+                const isFavorite = article.dataset.favorite === 'true';
+
+                show = show && (
+                    (statusFilters.includes('unread') && isUnread) ||
+                    (statusFilters.includes('favorites') && isFavorite)
+                );
+            }
+
+            // Période
+            if (period !== 'all') {
+                const articleDate = new Date(article.dataset.date);
+                const now = new Date();
+                const diffDays = Math.floor((now - articleDate) / (1000 * 60 * 60 * 24));
+
+                if (period === 'today' && diffDays > 0) show = false;
+                if (period === 'week' && diffDays > 7) show = false;
+                if (period === 'month' && diffDays > 30) show = false;
+            }
+
+            article.style.display = show ? 'block' : 'none';
+            if (show) visibleCount++;
+        });
+
+        const articleCount = document.getElementById('articleCount');
+        if (articleCount) {
+            articleCount.textContent = `${visibleCount} article${visibleCount > 1 ? 's' : ''}`;
+        }
+
+        const articlesGrid = document.getElementById('articlesGrid');
+        const noResults = document.getElementById('noResults');
+        if (visibleCount === 0) {
+            if (articlesGrid) articlesGrid.style.display = 'none';
+            if (noResults) noResults.style.display = 'flex';
+        } else {
+            if (articlesGrid) articlesGrid.style.display = 'grid';
+            if (noResults) noResults.style.display = 'none';
+        }
+    }
+
+    function sortArticles() {
+        const sortBy = document.getElementById('sortSelect')?.value || 'date-desc';
+        const grid = document.getElementById('articlesGrid');
+        if (!grid) return;
+
+        const articles = Array.from(grid.querySelectorAll('.article-card'));
+
+        articles.sort((a, b) => {
+            if (sortBy === 'date-desc') {
+                return new Date(b.dataset.date) - new Date(a.dataset.date);
+            } else if (sortBy === 'date-asc') {
+                return new Date(a.dataset.date) - new Date(b.dataset.date);
+            } else if (sortBy === 'source') {
+                return a.dataset.source.localeCompare(b.dataset.source);
+            }
+        });
+
+        articles.forEach(article => grid.appendChild(article));
+    }
+
+    function resetFilters() {
+        const quickSearch = document.getElementById('quickSearch');
+        const periodFilter = document.getElementById('periodFilter');
+
+        if (quickSearch) quickSearch.value = '';
+        if (periodFilter) periodFilter.value = 'all';
+
+        document.querySelectorAll('input[name="status"]').forEach(cb => {
+            cb.checked = cb.value === 'all';
+        });
+        applyFilters();
+    }
+
+    function toggleFavorite(articleId) {
+        fetch(`/api/articles/${articleId}/favorite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-id="${articleId}"]`);
+                if (card) {
+                    card.dataset.favorite = data.is_favorite;
+
+                    const icon = card.querySelector('.star-btn i');
+                    if (icon) {
+                        if (data.is_favorite) {
+                            icon.classList.add('bi-star-fill', 'starred');
+                            icon.classList.remove('bi-star');
+                        } else {
+                            icon.classList.remove('bi-star-fill', 'starred');
+                            icon.classList.add('bi-star');
+                        }
+                    }
+                }
+
+                updateCounts();
+                showToast(data.is_favorite ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
+            }
+        })
+        .catch(err => showToast('Erreur', 'error'));
+    }
+
+    function toggleRead(articleId) {
+        fetch(`/api/articles/${articleId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const card = document.querySelector(`[data-id="${articleId}"]`);
+                if (card) {
+                    card.dataset.read = data.is_read;
+
+                    const icon = card.querySelector('.read-btn i');
+                    const title = card.querySelector('.card-title');
+
+                    if (icon) {
+                        if (data.is_read) {
+                            icon.classList.add('bi-envelope-open');
+                            icon.classList.remove('bi-envelope');
+                        } else {
+                            icon.classList.remove('bi-envelope-open');
+                            icon.classList.add('bi-envelope');
+                        }
+                    }
+
+                    if (title) {
+                        if (data.is_read) {
+                            title.classList.remove('unread');
+                        } else {
+                            title.classList.add('unread');
+                        }
+                    }
+                }
+
+                updateCounts();
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function updateCounts() {
+        const unread = allArticles.filter(a => a.dataset.read === 'false').length;
+        const favorites = allArticles.filter(a => a.dataset.favorite === 'true').length;
+
+        const unreadBadge = document.getElementById('unreadBadge');
+        const favBadge = document.getElementById('favBadge');
+
+        if (unreadBadge) unreadBadge.textContent = unread;
+        if (favBadge) favBadge.textContent = favorites;
+    }
+
+    function loadFilters() {
+        const sources = new Set();
+        const categories = new Set();
+
+        allArticles.forEach(article => {
+            sources.add(article.dataset.source);
+            if (article.dataset.category) categories.add(article.dataset.category);
+        });
+
+        const sourcesContainer = document.getElementById('sourcesFilter');
+        if (sourcesContainer) {
+            sources.forEach(source => {
+                const label = document.createElement('label');
+                label.className = 'filter-checkbox';
+                label.innerHTML = `<input type="checkbox" value="${source}"><span>${source}</span>`;
+                sourcesContainer.appendChild(label);
+            });
+        }
+
+        const categoriesContainer = document.getElementById('categoriesFilter');
+        if (categoriesContainer) {
+            categories.forEach(cat => {
+                const label = document.createElement('label');
+                label.className = 'filter-checkbox';
+                label.innerHTML = `<input type="checkbox" value="${cat}"><span>${cat}</span>`;
+                categoriesContainer.appendChild(label);
+            });
+        }
+    }
+
+    function refreshFeeds() {
+        const btn = document.getElementById('refreshBtn');
+        if (!btn) return;
+
+        const icon = btn.querySelector('i');
+        if (icon) icon.style.animation = 'spin 1s linear infinite';
+        btn.disabled = true;
+
+        fetch('/api/feeds/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Flux actualisés avec succès', 'success');
+                setTimeout(() => location.reload(), 1500);
+            }
+        })
+        .catch(err => {
+            showToast('Erreur lors de l\'actualisation', 'error');
+            if (icon) icon.style.animation = '';
+            btn.disabled = false;
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        // Simple alert for now
+        alert(message);
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+})();
+</script>
+
 {% endblock %}
 
 {% block extra_js %}
