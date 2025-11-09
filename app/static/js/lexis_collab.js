@@ -794,3 +794,127 @@ function formatFileSize(bytes) {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+/**
+ * Modifier un dossier
+ */
+async function editFolder(folderId) {
+    showToast('⚠️ Fonctionnalité en développement', 'info');
+    // TODO: Implémenter la modification de dossier
+}
+
+/**
+ * Supprimer un dossier
+ */
+async function deleteFolder(folderId) {
+    if (!confirm('Voulez-vous vraiment supprimer ce dossier ?')) return;
+
+    try {
+        const response = await fetch(`/api/folders/${folderId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Dossier supprimé', 'success');
+            await loadFolders();
+        } else {
+            showToast('❌ ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('❌ Erreur lors de la suppression', 'error');
+    }
+}
+
+/**
+ * Modifier une note
+ */
+async function editNote(noteId) {
+    showToast('⚠️ Fonctionnalité en développement', 'info');
+    // TODO: Implémenter la modification de note
+}
+
+/**
+ * Répondre à un commentaire
+ */
+async function replyToComment(commentId) {
+    showToast('⚠️ Fonctionnalité en développement', 'info');
+    // TODO: Implémenter la réponse aux commentaires
+}
+
+/**
+ * Supprimer un commentaire
+ */
+async function deleteComment(commentId) {
+    if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return;
+
+    try {
+        const response = await fetch(`/api/articles/comments/${commentId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Commentaire supprimé', 'success');
+            await loadArticleComments(state.currentArticleId);
+        } else {
+            showToast('❌ ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('❌ Erreur lors de la suppression', 'error');
+    }
+}
+
+/**
+ * Supprimer un surlignage
+ */
+async function deleteHighlight(highlightId) {
+    if (!confirm('Voulez-vous vraiment supprimer ce surlignage ?')) return;
+
+    try {
+        const response = await fetch(`/api/articles/highlights/${highlightId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Surlignage supprimé', 'success');
+            await loadArticleHighlights(state.currentArticleId);
+        } else {
+            showToast('❌ ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('❌ Erreur lors de la suppression', 'error');
+    }
+}
+
+/**
+ * Supprimer une pièce jointe
+ */
+async function deleteAttachment(attachmentId) {
+    if (!confirm('Voulez-vous vraiment supprimer cette pièce jointe ?')) return;
+
+    try {
+        const response = await fetch(`/api/articles/attachments/${attachmentId}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('✅ Pièce jointe supprimée', 'success');
+            await loadArticleAttachments(state.currentArticleId);
+        } else {
+            showToast('❌ ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showToast('❌ Erreur lors de la suppression', 'error');
+    }
+}
